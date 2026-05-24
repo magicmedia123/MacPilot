@@ -9,6 +9,16 @@ struct SettingsViewModel {
         lessons.filter(\.isCompleted).count
     }
 
+    var profileSummary: String? {
+        guard let experience = progress?.macExperienceLevel,
+              let apps = progress?.windowsAppsUsed,
+              let goal = progress?.learningGoal else {
+            return nil
+        }
+
+        return "\(experience) Mac learner. Focus: \(goal). Apps: \(apps)."
+    }
+
     @MainActor
     func resetLessonProgress() {
         lessons.forEach { lesson in

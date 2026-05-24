@@ -23,6 +23,35 @@ struct DashboardViewModel {
     }
 
     var nextLesson: Lesson? {
-        lessons.first { !$0.isCompleted } ?? lessons.first
+        if progress?.learningGoal == "Screenshots",
+           let screenshotLesson = lessons.first(where: { $0.id == "shortcut-screenshots" && !$0.isCompleted }) {
+            return screenshotLesson
+        }
+
+        if progress?.learningGoal == "Find files and apps",
+           let spotlightLesson = lessons.first(where: { $0.id == "shortcut-spotlight" && !$0.isCompleted }) {
+            return spotlightLesson
+        }
+
+        if progress?.learningGoal == "Switch apps faster",
+           let switchingLesson = lessons.first(where: { $0.id == "shortcut-app-switching" && !$0.isCompleted }) {
+            return switchingLesson
+        }
+
+        return lessons.first { !$0.isCompleted } ?? lessons.first
+    }
+
+    var welcomeSubtitle: String {
+        guard let experience = progress?.macExperienceLevel else {
+            return "A calm practice space for turning Windows muscle memory into Mac confidence."
+        }
+
+        return "Personalized for a \(experience.lowercased()) Mac learner moving from Windows."
+    }
+
+    var migrationSummary: String {
+        let apps = progress?.windowsAppsUsed ?? "Windows apps"
+        let goal = progress?.learningGoal ?? "Mac shortcuts"
+        return "Focus: \(goal). Windows background: \(apps)."
     }
 }

@@ -10,6 +10,9 @@ final class UserProgress {
     var bestStreak: Int
     var lastPracticeDate: Date?
     var createdAt: Date
+    var macExperienceLevel: String?
+    var windowsAppsUsed: String?
+    var learningGoal: String?
 
     init(
         id: String = "primary-progress",
@@ -18,7 +21,10 @@ final class UserProgress {
         currentStreak: Int = 0,
         bestStreak: Int = 0,
         lastPracticeDate: Date? = nil,
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        macExperienceLevel: String? = nil,
+        windowsAppsUsed: String? = nil,
+        learningGoal: String? = nil
     ) {
         self.id = id
         self.hasCompletedOnboarding = hasCompletedOnboarding
@@ -27,9 +33,19 @@ final class UserProgress {
         self.bestStreak = bestStreak
         self.lastPracticeDate = lastPracticeDate
         self.createdAt = createdAt
+        self.macExperienceLevel = macExperienceLevel
+        self.windowsAppsUsed = windowsAppsUsed
+        self.learningGoal = learningGoal
     }
 
-    func completeOnboarding() {
+    func completeOnboarding(
+        macExperienceLevel: String,
+        windowsAppsUsed: [String],
+        learningGoal: String
+    ) {
+        self.macExperienceLevel = macExperienceLevel
+        self.windowsAppsUsed = windowsAppsUsed.joined(separator: ", ")
+        self.learningGoal = learningGoal
         hasCompletedOnboarding = true
     }
 

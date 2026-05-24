@@ -34,7 +34,7 @@ struct HomeView: View {
             Text("Welcome to MacPilot")
                 .font(.largeTitle.weight(.semibold))
 
-            Text("A calm practice space for turning Windows muscle memory into Mac confidence.")
+            Text(viewModel.welcomeSubtitle)
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
@@ -99,6 +99,10 @@ struct HomeView: View {
 
                     Spacer()
                 }
+
+                Label(viewModel.migrationSummary, systemImage: "person.crop.circle.badge.checkmark")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
 
                 Button {
                     selection = .lessons

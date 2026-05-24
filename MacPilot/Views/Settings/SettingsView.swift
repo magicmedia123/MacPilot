@@ -47,6 +47,11 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                if let profileSummary = viewModel.profileSummary {
+                    Label(profileSummary, systemImage: "person.crop.circle")
+                        .foregroundStyle(.secondary)
+                }
+
                 Divider()
 
                 HStack {
