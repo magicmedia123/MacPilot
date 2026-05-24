@@ -19,6 +19,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 22) {
                 header
                 metrics
+                todaysPlan
                 continueLearning
                 gettingStarted
             }
@@ -110,6 +111,43 @@ struct HomeView: View {
                     Label("Open Lessons", systemImage: "arrow.right.circle")
                 }
                 .buttonStyle(BorderedProminentButtonStyle())
+            }
+        }
+    }
+
+    private var todaysPlan: some View {
+        CardView {
+            HStack(alignment: .top, spacing: 18) {
+                Image(systemName: viewModel.completedToday ? "checkmark.seal.fill" : "target")
+                    .font(.system(size: 32, weight: .medium))
+                    .foregroundStyle(viewModel.completedToday ? .green : .blue)
+                    .frame(width: 56, height: 56)
+                    .background((viewModel.completedToday ? Color.green : Color.blue).opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(viewModel.todayPlanTitle)
+                        .font(.headline)
+
+                    Text(viewModel.nextLesson?.title ?? "No lesson available")
+                        .font(.title2.weight(.semibold))
+
+                    Text(viewModel.recommendationReason)
+                        .foregroundStyle(.secondary)
+
+                    Label(viewModel.todayPlanStatus, systemImage: viewModel.completedToday ? "checkmark.circle" : "clock")
+                        .font(.callout.weight(.medium))
+                        .foregroundStyle(viewModel.completedToday ? .green : .secondary)
+                }
+
+                Spacer()
+
+                Button {
+                    selection = .lessons
+                } label: {
+                    Label("Start", systemImage: "play.circle")
+                }
+                .buttonStyle(BorderedProminentButtonStyle())
+                .disabled(lessons.isEmpty)
             }
         }
     }

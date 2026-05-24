@@ -17,6 +17,14 @@ struct DashboardViewModel {
         completedToday ? "Daily goal complete" : "Complete 1 lesson today"
     }
 
+    var todayPlanTitle: String {
+        completedToday ? "Keep the streak warm" : "Today's plan"
+    }
+
+    var todayPlanStatus: String {
+        completedToday ? "You already completed today's goal." : "Finish one short lesson to keep momentum."
+    }
+
     var completedToday: Bool {
         guard let lastPracticeDate = progress?.lastPracticeDate else { return false }
         return Calendar.current.isDateInToday(lastPracticeDate)
@@ -53,5 +61,18 @@ struct DashboardViewModel {
         let apps = progress?.windowsAppsUsed ?? "Windows apps"
         let goal = progress?.learningGoal ?? "Mac shortcuts"
         return "Focus: \(goal). Windows background: \(apps)."
+    }
+
+    var recommendationReason: String {
+        switch progress?.learningGoal {
+        case "Screenshots":
+            return "Recommended because you chose screenshots as your first focus."
+        case "Find files and apps":
+            return "Recommended because Spotlight helps replace Windows search habits."
+        case "Switch apps faster":
+            return "Recommended because app switching is core Mac navigation."
+        default:
+            return "Recommended as a quick everyday shortcut habit."
+        }
     }
 }
