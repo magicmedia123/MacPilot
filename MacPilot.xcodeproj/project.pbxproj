@@ -19,6 +19,13 @@
 		8A00000A2C0A000100000001 /* ProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A00010A2C0A000100000001 /* ProgressView.swift */; };
 		8A00000B2C0A000100000001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A00010B2C0A000100000001 /* OnboardingView.swift */; };
 		8A00000C2C0A000100000001 /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A00010C2C0A000100000001 /* CardView.swift */; };
+		8A0000272C0A000100000001 /* AchievementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001272C0A000100000001 /* AchievementService.swift */; };
+		8A0000252C0A000100000001 /* Achievement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001252C0A000100000001 /* Achievement.swift */; };
+		8A0000262C0A000100000001 /* ReviewItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001262C0A000100000001 /* ReviewItem.swift */; };
+		8A0000232C0A000100000001 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001232C0A000100000001 /* AchievementsView.swift */; };
+		8A0000242C0A000100000001 /* ReviewCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001242C0A000100000001 /* ReviewCard.swift */; };
+		8A0000212C0A000100000001 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001212C0A000100000001 /* ConfettiView.swift */; };
+		8A0000222C0A000100000001 /* ProgressRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001222C0A000100000001 /* ProgressRing.swift */; };
 		8A00000D2C0A000100000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8A00010D2C0A000100000001 /* Assets.xcassets */; };
 		8A00000E2C0A000100000001 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A00010F2C0A000100000001 /* DashboardViewModel.swift */; };
 		8A00000F2C0A000100000001 /* LessonsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001102C0A000100000001 /* LessonsViewModel.swift */; };
@@ -41,6 +48,13 @@
 		8A00010A2C0A000100000001 /* ProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressView.swift; sourceTree = "<group>"; };
 		8A00010B2C0A000100000001 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		8A00010C2C0A000100000001 /* CardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardView.swift; sourceTree = "<group>"; };
+		8A0001272C0A000100000001 /* AchievementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementService.swift; sourceTree = "<group>"; };
+		8A0001252C0A000100000001 /* Achievement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Achievement.swift; sourceTree = "<group>"; };
+		8A0001262C0A000100000001 /* ReviewItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewItem.swift; sourceTree = "<group>"; };
+		8A0001232C0A000100000001 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
+		8A0001242C0A000100000001 /* ReviewCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCard.swift; sourceTree = "<group>"; };
+		8A0001212C0A000100000001 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
+		8A0001222C0A000100000001 /* ProgressRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressRing.swift; sourceTree = "<group>"; };
 		8A00010D2C0A000100000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8A00010E2C0A000100000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8A00010F2C0A000100000001 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
@@ -97,6 +111,8 @@
 			children = (
 				8A0001022C0A000100000001 /* Lesson.swift */,
 				8A0001032C0A000100000001 /* UserProgress.swift */,
+				8A0001252C0A000100000001 /* Achievement.swift */,
+				8A0001262C0A000100000001 /* ReviewItem.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -106,6 +122,7 @@
 			children = (
 				8A0001042C0A000100000001 /* MockLessonData.swift */,
 				8A0001052C0A000100000001 /* SampleDataSeeder.swift */,
+				8A0001272C0A000100000001 /* AchievementService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -114,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				8A0000532C0A000100000001 /* Home */,
+				8A00005A2C0A000100000001 /* Achievements */,
 				8A0000542C0A000100000001 /* Lessons */,
 				8A0000552C0A000100000001 /* Progress */,
 				8A0000592C0A000100000001 /* Settings */,
@@ -127,8 +145,17 @@
 			isa = PBXGroup;
 			children = (
 				8A0001072C0A000100000001 /* HomeView.swift */,
+				8A0001242C0A000100000001 /* ReviewCard.swift */,
 			);
 			path = Home;
+			sourceTree = "<group>";
+		};
+		8A00005A2C0A000100000001 /* Achievements */ = {
+			isa = PBXGroup;
+			children = (
+				8A0001232C0A000100000001 /* AchievementsView.swift */,
+			);
+			path = Achievements;
 			sourceTree = "<group>";
 		};
 		8A0000542C0A000100000001 /* Lessons */ = {
@@ -160,6 +187,8 @@
 			isa = PBXGroup;
 			children = (
 				8A00010C2C0A000100000001 /* CardView.swift */,
+				8A0001212C0A000100000001 /* ConfettiView.swift */,
+				8A0001222C0A000100000001 /* ProgressRing.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -264,6 +293,13 @@
 				8A00000A2C0A000100000001 /* ProgressView.swift in Sources */,
 				8A00000B2C0A000100000001 /* OnboardingView.swift in Sources */,
 				8A00000C2C0A000100000001 /* CardView.swift in Sources */,
+				8A0000272C0A000100000001 /* AchievementService.swift in Sources */,
+				8A0000252C0A000100000001 /* Achievement.swift in Sources */,
+				8A0000262C0A000100000001 /* ReviewItem.swift in Sources */,
+				8A0000232C0A000100000001 /* AchievementsView.swift in Sources */,
+				8A0000242C0A000100000001 /* ReviewCard.swift in Sources */,
+				8A0000212C0A000100000001 /* ConfettiView.swift in Sources */,
+				8A0000222C0A000100000001 /* ProgressRing.swift in Sources */,
 				8A00000E2C0A000100000001 /* DashboardViewModel.swift in Sources */,
 				8A00000F2C0A000100000001 /* LessonsViewModel.swift in Sources */,
 				8A0000112C0A000100000001 /* ProgressViewModel.swift in Sources */,

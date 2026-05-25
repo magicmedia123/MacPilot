@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CardView<Content: View>: View {
     let content: Content
+    @State private var isHovered = false
 
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
@@ -16,8 +17,15 @@ struct CardView<Content: View>: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .strokeBorder(.separator.opacity(0.35))
             }
+            .shadow(color: .black.opacity(isHovered ? 0.08 : 0), radius: 8, y: 2)
+            .scaleEffect(isHovered ? 1.005 : 1.0)
+            .animation(.easeOut(duration: 0.2), value: isHovered)
+            .onHover { hovering in
+                isHovered = hovering
+            }
     }
 }
+
 
 struct MetricTile: View {
     let title: String

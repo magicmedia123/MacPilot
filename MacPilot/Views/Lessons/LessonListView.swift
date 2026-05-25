@@ -4,9 +4,10 @@ import SwiftUI
 struct LessonListView: View {
     @Query(sort: \Lesson.sortOrder) private var lessons: [Lesson]
     @State private var selectedCategory: LessonCategory?
+    @State private var searchText = ""
 
     private var viewModel: LessonsViewModel {
-        LessonsViewModel(lessons: lessons, selectedCategory: selectedCategory)
+        LessonsViewModel(lessons: lessons, selectedCategory: selectedCategory, searchText: searchText)
     }
 
     var body: some View {
@@ -25,6 +26,7 @@ struct LessonListView: View {
                 .listStyle(.inset)
             }
             .navigationTitle("Lessons")
+            .searchable(text: $searchText, prompt: "Search lessons")
         }
     }
 

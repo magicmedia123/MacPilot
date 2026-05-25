@@ -3,6 +3,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Binding var selection: SidebarItem?
+    @State private var isVisible = false
     @Query(sort: \Lesson.sortOrder) private var lessons: [Lesson]
     @Query private var progressRecords: [UserProgress]
 
@@ -14,25 +15,62 @@ struct HomeView: View {
         DashboardViewModel(lessons: lessons, progress: progress)
     }
 
+    private var greeting: String {
+        let hour = Calendar.current.component(.hour, from: .now)
+        switch hour {
+        case 5..<12: return "Good morning"
+        case 12..<17: return "Good afternoon"
+        default: return "Good evening"
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 header
+                    .opacity(isVisible ? 1 : 0)
+                    .offset(y: isVisible ? 0 : 16)
+
                 metrics
+                    .opacity(isVisible ? 1 : 0)
+                    .offset(y: isVisible ? 0 : 16)
+                    .animation(.easeOut(duration: 0.5).delay(0.1), value: isVisible)
+
                 todaysPlan
+                    .opacity(isVisible ? 1 : 0)
+                    .offset(y: isVisible ? 0 : 16)
+                    .animation(.easeOut(duration: 0.5).delay(0.2), value: isVisible)
+
+                ReviewCard()
+                    .opacity(isVisible ? 1 : 0)
+                    .offset(y: isVisible ? 0 : 16)
+                    .animation(.easeOut(duration: 0.5).delay(0.25), value: isVisible)
+
                 continueLearning
+                    .opacity(isVisible ? 1 : 0)
+                    .offset(y: isVisible ? 0 : 16)
+                    .animation(.easeOut(duration: 0.5).delay(0.3), value: isVisible)
+
                 gettingStarted
+                    .opacity(isVisible ? 1 : 0)
+                    .offset(y: isVisible ? 0 : 16)
+                    .animation(.easeOut(duration: 0.5).delay(0.4), value: isVisible)
             }
             .padding(28)
             .frame(maxWidth: 1040, alignment: .leading)
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .navigationTitle("Home")
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.5)) {
+                isVisible = true
+            }
+        }
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Welcome to MacPilot")
+            Text(greeting)
                 .font(.largeTitle.weight(.semibold))
 
             Text(viewModel.welcomeSubtitle)

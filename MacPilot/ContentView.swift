@@ -5,6 +5,7 @@ enum SidebarItem: Hashable {
     case home
     case lessons
     case progress
+    case achievements
     case settings
 }
 
@@ -30,6 +31,10 @@ struct ContentView: View {
                     Label("Progress", systemImage: "chart.bar")
                 }
 
+                NavigationLink(value: SidebarItem.achievements) {
+                    Label("Achievements", systemImage: "trophy")
+                }
+
                 NavigationLink(value: SidebarItem.settings) {
                     Label("Settings", systemImage: "gearshape")
                 }
@@ -44,6 +49,8 @@ struct ContentView: View {
                 LessonListView()
             case .progress:
                 ProgressDashboardView()
+            case .achievements:
+                AchievementsView()
             case .settings:
                 SettingsView()
             case .none:

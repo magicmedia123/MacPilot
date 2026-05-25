@@ -4,6 +4,7 @@ import SwiftUI
 struct ProgressDashboardView: View {
     @Query(sort: \Lesson.sortOrder) private var lessons: [Lesson]
     @Query private var progressRecords: [UserProgress]
+    @State private var animateProgress = false
 
     private var progress: UserProgress? {
         progressRecords.first
@@ -26,6 +27,11 @@ struct ProgressDashboardView: View {
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .navigationTitle("Progress")
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8).delay(0.2)) {
+                animateProgress = true
+            }
+        }
     }
 
     private var header: some View {
@@ -80,14 +86,15 @@ struct ProgressDashboardView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                ProgressView(value: viewModel.completionRatio)
+                ProgressView(value: animateProgress ? viewModel.completionRatio : 0)
                     .tint(.blue)
 
                 ForEach(LessonCategory.allCases) { category in
                     CategoryProgressRow(
                         category: category,
                         completed: viewModel.completedCount(for: category),
-                        total: viewModel.totalCount(for: category)
+                        total: viewModel.totalCount(for: category),
+                        animate: animateProgress
                     )
                 }
             }
@@ -127,6 +134,7 @@ private struct CategoryProgressRow: View {
     let category: LessonCategory
     let completed: Int
     let total: Int
+    var animate: Bool = true
 
     private var ratio: Double {
         guard total > 0 else { return 0 }
@@ -145,7 +153,7 @@ private struct CategoryProgressRow: View {
             }
             .font(.callout)
 
-            ProgressView(value: ratio)
+            ProgressView(value: animate ? ratio : 0)
                 .tint(.blue)
         }
     }

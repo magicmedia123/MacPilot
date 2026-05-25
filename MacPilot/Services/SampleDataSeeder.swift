@@ -8,6 +8,7 @@ enum SampleDataSeeder {
         seedLessonsIfNeeded(in: modelContext)
         addMissingLessonsIfNeeded(in: modelContext)
         updateLessonQuizzesIfNeeded(in: modelContext)
+        seedAchievementsIfNeeded(in: modelContext)
     }
 
     @MainActor
@@ -71,5 +72,25 @@ enum SampleDataSeeder {
             lesson.incorrectQuizAnswerOne = mockLesson.incorrectQuizAnswerOne
             lesson.incorrectQuizAnswerTwo = mockLesson.incorrectQuizAnswerTwo
         }
+    }
+
+    @MainActor
+    private static func seedAchievementsIfNeeded(in modelContext: ModelContext) {
+        let descriptor = FetchDescriptor<Achievement>()
+        guard (try? modelContext.fetch(descriptor).isEmpty) == true else {
+            return
+        }
+        
+        let initialAchievements = [
+            Achievement(id: "first-shortcut", title: "First Step", detail: "Complete your first lesson.", symbolName: "trophy"),
+            Achievement(id: "comfort-zone", title: "Getting Comfortable", detail: "Complete 5 lessons.", symbolName: "sparkles"),
+            Achievement(id: "halfway", title: "Halfway There", detail: "Complete 12 lessons.", symbolName: "gauge.with.needle"),
+            Achievement(id: "master", title: "Mac Pilot Master", detail: "Complete all 25 lessons.", symbolName: "crown"),
+            Achievement(id: "streak-3", title: "Consistency Kid", detail: "Achieve a 3-day learning streak.", symbolName: "flame"),
+            Achievement(id: "streak-7", title: "Weekly Warrior", detail: "Achieve a 7-day learning streak.", symbolName: "bolt"),
+            Achievement(id: "polymath", title: "Fast Learner", detail: "Complete 3 lessons in a single day.", symbolName: "speedometer")
+        ]
+        
+        initialAchievements.forEach { modelContext.insert($0) }
     }
 }

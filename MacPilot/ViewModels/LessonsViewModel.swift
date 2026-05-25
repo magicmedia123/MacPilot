@@ -3,9 +3,22 @@ import Foundation
 struct LessonsViewModel {
     let lessons: [Lesson]
     let selectedCategory: LessonCategory?
+    var searchText: String = ""
 
     var filteredLessons: [Lesson] {
-        guard let selectedCategory else { return lessons }
-        return lessons.filter { $0.category == selectedCategory }
+        var result = lessons
+
+        if let selectedCategory {
+            result = result.filter { $0.category == selectedCategory }
+        }
+
+        if !searchText.isEmpty {
+            result = result.filter {
+                $0.title.localizedCaseInsensitiveContains(searchText)
+                || $0.summary.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+
+        return result
     }
 }

@@ -4,6 +4,7 @@ import SwiftUI
 struct SettingsView: View {
     @Query(sort: \Lesson.sortOrder) private var lessons: [Lesson]
     @Query private var progressRecords: [UserProgress]
+    @State private var showsResetConfirmation = false
 
     private var viewModel: SettingsViewModel {
         SettingsViewModel(lessons: lessons, progress: progressRecords.first)
@@ -63,11 +64,22 @@ struct SettingsView: View {
                     .buttonStyle(BorderedButtonStyle())
 
                     Button(role: .destructive) {
-                        viewModel.resetLessonProgress()
+                        showsResetConfirmation = true
                     } label: {
                         Label("Reset Progress", systemImage: "arrow.counterclockwise")
                     }
                     .buttonStyle(BorderedButtonStyle())
+                    .confirmationDialog(
+                        "Reset all progress?",
+                        isPresented: $showsResetConfirmation,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Reset", role: .destructive) {
+                            viewModel.resetLessonProgress()
+                        }
+                    } message: {
+                        Text("This will erase all lesson completions and streaks. This action cannot be undone.")
+                    }
                 }
             }
         }
@@ -80,6 +92,9 @@ struct SettingsView: View {
                     .font(.headline)
 
                 Text("MacPilot helps Windows users build Mac muscle memory through short, focused lessons.")
+                    .foregroundStyle(.secondary)
+
+                Text("Version 1.0.0")
                     .foregroundStyle(.secondary)
             }
         }

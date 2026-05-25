@@ -10,7 +10,9 @@ struct MacPilotApp: App {
             let schema = Schema([
                 Lesson.self,
                 LessonStep.self,
-                UserProgress.self
+                UserProgress.self,
+                Achievement.self,
+                ReviewItem.self
             ])
             let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             modelContainer = try ModelContainer(for: schema, configurations: [configuration])

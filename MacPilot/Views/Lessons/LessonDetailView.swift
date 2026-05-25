@@ -3,12 +3,22 @@ import SwiftData
 import SwiftUI
 
 struct LessonDetailView: View {
-    @Bindable var lesson: Lesson
+    let initialLesson: Lesson
+    @State private var lesson: Lesson
+    
+    @Environment(\.modelContext) private var modelContext
+    @Query private var lessons: [Lesson]
     @Query private var progressRecords: [UserProgress]
+    
+    init(lesson: Lesson) {
+        self.initialLesson = lesson
+        self._lesson = State(initialValue: lesson)
+    }
     @State private var selectedQuizAnswer: String?
     @State private var capturedShortcut: CapturedShortcut?
     @State private var hasCompletedKeyboardPractice = false
     @State private var showsCompletionCelebration = false
+    @State private var showsCompletionToast = false
 
     private var sortedSteps: [LessonStep] {
         lesson.steps.sorted { $0.sortOrder < $1.sortOrder }
@@ -61,10 +71,42 @@ struct LessonDetailView: View {
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .navigationTitle(lesson.title)
-        .alert("Lesson Complete", isPresented: $showsCompletionCelebration) {
-            Button("Nice", role: .cancel) { }
-        } message: {
-            Text("Your daily goal and streak have been updated.")
+        .overlay(alignment: .top) {
+            if showsCompletionToast {
+                HStack(spacing: 8) {
+                    Text("🎉 Lesson Complete!")
+                        .font(.headline)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(.regularMaterial, in: Capsule())
+                .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+                .padding(.top, 12)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .overlay {
+            ConfettiView(isActive: $showsCompletionCelebration)
+        }
+        .onChange(of: showsCompletionCelebration) { _, active in
+            if active {
+                withAnimation(.spring(duration: 0.4)) {
+                    showsCompletionToast = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    withAnimation(.easeIn(duration: 0.3)) {
+                        showsCompletionToast = false
+                    }
+                }
+            }
+        }
+        .onChange(of: initialLesson) { _, newLesson in
+            lesson = newLesson
+            capturedShortcut = nil
+            hasCompletedKeyboardPractice = false
+            selectedQuizAnswer = nil
+            showsCompletionCelebration = false
+            showsCompletionToast = false
         }
     }
 
@@ -145,12 +187,23 @@ struct LessonDetailView: View {
                 Spacer()
 
                 if lesson.isCompleted {
-                    Button {
-                        toggleCompletion()
-                    } label: {
-                        Label("Mark Incomplete", systemImage: "arrow.uturn.backward")
+                    HStack(spacing: 12) {
+                        Button {
+                            toggleCompletion()
+                        } label: {
+                            Label("Mark Incomplete", systemImage: "arrow.uturn.backward")
+                        }
+                        .buttonStyle(BorderedButtonStyle())
+                        
+                        if let next = nextLesson {
+                            Button {
+                                navigateToNext(next)
+                            } label: {
+                                Label("Next Lesson", systemImage: "arrow.forward.circle.fill")
+                            }
+                            .buttonStyle(BorderedProminentButtonStyle())
+                        }
                     }
-                    .buttonStyle(BorderedButtonStyle())
                 } else {
                     Button {
                         toggleCompletion()
@@ -278,11 +331,53 @@ struct LessonDetailView: View {
             lesson.isCompleted = false
             lesson.completedAt = nil
             progress.removeLessonCompletion()
+            
+            let lessonId = lesson.id
+            if let reviewItems = try? modelContext.fetch(FetchDescriptor<ReviewItem>()),
+               let item = reviewItems.first(where: { $0.lessonId == lessonId }) {
+                modelContext.delete(item)
+            }
         } else {
             lesson.isCompleted = true
             lesson.completedAt = .now
             progress.recordLessonCompletion()
             showsCompletionCelebration = true
+            
+            let lessonId = lesson.id
+            if let reviewItems = try? modelContext.fetch(FetchDescriptor<ReviewItem>()),
+               !reviewItems.contains(where: { $0.lessonId == lessonId }) {
+                let reviewItem = ReviewItem(lessonId: lessonId)
+                modelContext.insert(reviewItem)
+            }
+            
+            AchievementService.checkAndUnlockAchievements(modelContext: modelContext, lessons: lessons, progress: progress)
+        }
+    }
+
+    private var nextLesson: Lesson? {
+        let sorted = lessons.sorted { $0.sortOrder < $1.sortOrder }
+        if let currentIndex = sorted.firstIndex(where: { $0.id == lesson.id }) {
+            let subsequent = sorted[currentIndex...]
+            if let next = subsequent.first(where: { $0.id != lesson.id && !$0.isCompleted }) {
+                return next
+            }
+            let antecedent = sorted[..<currentIndex]
+            if let next = antecedent.first(where: { !$0.isCompleted }) {
+                return next
+            }
+        }
+        return nil
+    }
+
+    private func navigateToNext(_ next: Lesson) {
+        capturedShortcut = nil
+        hasCompletedKeyboardPractice = false
+        selectedQuizAnswer = nil
+        showsCompletionCelebration = false
+        showsCompletionToast = false
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            lesson = next
         }
     }
 }
