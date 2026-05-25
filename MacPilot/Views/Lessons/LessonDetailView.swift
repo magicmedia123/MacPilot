@@ -159,8 +159,8 @@ struct LessonDetailView: View {
 
                         Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
                             GridRow {
-                                ShortcutLabel(title: "Windows", value: step.windowsEquivalent)
-                                ShortcutLabel(title: "Mac", value: step.macAction)
+                                ShortcutLabel(title: "Windows", value: step.windowsEquivalent, isMac: false)
+                                ShortcutLabel(title: "Mac", value: step.macAction, isMac: true)
                             }
                         }
                     }
@@ -218,98 +218,128 @@ struct LessonDetailView: View {
     }
 
     private var practiceCheck: some View {
-        CardView {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 10) {
-                    Image(systemName: "questionmark.circle")
-                        .foregroundStyle(.blue)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: "questionmark.circle")
+                    .foregroundStyle(.blue)
 
-                    Text("Practice check")
-                        .font(.headline)
-                }
+                Text("Practice check")
+                    .font(.headline)
+            }
 
-                Text(quizQuestion)
-                    .font(.title3.weight(.semibold))
+            Text(quizQuestion)
+                .font(.title3.weight(.semibold))
 
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(quizAnswers, id: \.self) { answer in
-                        QuizAnswerButton(
-                            answer: answer,
-                            isSelected: selectedQuizAnswer == answer,
-                            isCorrect: answer == correctQuizAnswer,
-                            hasSelection: selectedQuizAnswer != nil
-                        ) {
-                            selectedQuizAnswer = answer
-                        }
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(quizAnswers, id: \.self) { answer in
+                    QuizAnswerButton(
+                        answer: answer,
+                        isSelected: selectedQuizAnswer == answer,
+                        isCorrect: answer == correctQuizAnswer,
+                        hasSelection: selectedQuizAnswer != nil
+                    ) {
+                        selectedQuizAnswer = answer
                     }
                 }
+            }
 
-                if let selectedQuizAnswer {
-                    Label(
-                        selectedQuizAnswer == correctQuizAnswer ? "Correct. You can complete this lesson." : "Try again. Look back at the Mac action above.",
-                        systemImage: selectedQuizAnswer == correctQuizAnswer ? "checkmark.circle.fill" : "xmark.circle.fill"
-                    )
-                    .font(.callout.weight(.medium))
-                    .foregroundStyle(selectedQuizAnswer == correctQuizAnswer ? .green : .red)
-                }
+            if let selectedQuizAnswer {
+                Label(
+                    selectedQuizAnswer == correctQuizAnswer ? "Correct. You can complete this lesson." : "Try again. Look back at the Mac action above.",
+                    systemImage: selectedQuizAnswer == correctQuizAnswer ? "checkmark.circle.fill" : "xmark.circle.fill"
+                )
+                .font(.callout.weight(.medium))
+                .foregroundStyle(selectedQuizAnswer == correctQuizAnswer ? .green : .red)
             }
         }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.green.opacity(0.05), Color.green.opacity(0.01)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.green.opacity(0.2), lineWidth: 1.5)
+        )
+        .shadow(color: Color.green.opacity(0.03), radius: 8, y: 3)
     }
 
     private var keyboardPractice: some View {
-        CardView {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 10) {
-                    Image(systemName: hasCompletedKeyboardPractice ? "checkmark.circle.fill" : "keyboard")
-                        .foregroundStyle(hasCompletedKeyboardPractice ? .green : .blue)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: hasCompletedKeyboardPractice ? "checkmark.circle.fill" : "keyboard")
+                    .foregroundStyle(hasCompletedKeyboardPractice ? .green : .blue)
 
-                    Text("Keyboard practice")
-                        .font(.headline)
-                }
+                Text("Keyboard practice")
+                    .font(.headline)
+            }
 
-                Text("Press the Mac shortcut")
-                    .font(.title3.weight(.semibold))
+            Text("Press the Mac shortcut")
+                .font(.title3.weight(.semibold))
 
-                HStack(spacing: 12) {
-                    ShortcutKeyCaps(displayText: correctQuizAnswer)
+            HStack(spacing: 12) {
+                ShortcutKeyCaps(displayText: correctQuizAnswer)
 
-                    Spacer()
+                Spacer()
 
-                    if let capturedShortcut {
-                        Text("You pressed \(capturedShortcut.displayText)")
-                            .font(.callout.weight(.medium))
-                            .foregroundStyle(hasCompletedKeyboardPractice ? .green : .red)
-                    } else {
-                        Text("Waiting for input")
-                            .font(.callout.weight(.medium))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                KeyboardShortcutCaptureView { shortcut in
-                    capturedShortcut = shortcut
-                    hasCompletedKeyboardPractice = shortcut == expectedShortcut
-                }
-                .frame(height: 78)
-
-                Label(
-                    keyboardPracticeMessage,
-                    systemImage: hasCompletedKeyboardPractice ? "checkmark.circle.fill" : "info.circle"
-                )
-                .font(.callout.weight(.medium))
-                .foregroundStyle(hasCompletedKeyboardPractice ? .green : .secondary)
-
-                if !hasCompletedKeyboardPractice {
-                    Button {
-                        hasCompletedKeyboardPractice = true
-                    } label: {
-                        Label("I Practiced This Shortcut", systemImage: "hand.tap")
-                    }
-                    .buttonStyle(BorderedButtonStyle())
-                    .help("Some macOS system shortcuts are handled before MacPilot can detect them.")
+                if let capturedShortcut {
+                    Text("You pressed \(capturedShortcut.displayText)")
+                        .font(.callout.weight(.medium))
+                        .foregroundStyle(hasCompletedKeyboardPractice ? .green : .red)
+                } else {
+                    Text("Waiting for input")
+                        .font(.callout.weight(.medium))
+                        .foregroundStyle(.secondary)
                 }
             }
+
+            KeyboardShortcutCaptureView { shortcut in
+                capturedShortcut = shortcut
+                hasCompletedKeyboardPractice = shortcut == expectedShortcut
+            }
+            .frame(height: 78)
+
+            Label(
+                keyboardPracticeMessage,
+                systemImage: hasCompletedKeyboardPractice ? "checkmark.circle.fill" : "info.circle"
+            )
+            .font(.callout.weight(.medium))
+            .foregroundStyle(hasCompletedKeyboardPractice ? .green : .secondary)
+
+            if !hasCompletedKeyboardPractice {
+                Button {
+                    hasCompletedKeyboardPractice = true
+                } label: {
+                    Label("I Practiced This Shortcut", systemImage: "hand.tap")
+                }
+                .buttonStyle(BorderedButtonStyle())
+                .help("Some macOS system shortcuts are handled before MacPilot can detect them.")
+            }
         }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.blue.opacity(0.06), Color.blue.opacity(0.02)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.blue.opacity(0.24), lineWidth: 1.5)
+        )
+        .shadow(color: Color.blue.opacity(0.04), radius: 8, y: 3)
     }
 
     private var keyboardPracticeMessage: String {
@@ -645,18 +675,29 @@ private extension String {
 private struct ShortcutLabel: View {
     let title: String
     let value: String
+    let isMac: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(isMac ? Color.accentColor : Color.secondary)
 
             Text(value)
-                .font(.system(.body, design: .rounded).weight(.semibold))
-                .padding(.horizontal, 10)
+                .font(.system(.body, design: .monospaced).weight(isMac ? .bold : .semibold))
+                .foregroundStyle(isMac ? Color.primary : Color.secondary)
+                .padding(.horizontal, 12)
                 .padding(.vertical, 7)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .background(
+                    isMac 
+                        ? Color.blue.opacity(0.12)
+                        : Color.gray.opacity(0.08),
+                    in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(isMac ? Color.blue.opacity(0.24) : Color.gray.opacity(0.15), lineWidth: 1)
+                )
         }
     }
 }
