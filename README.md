@@ -2,6 +2,10 @@
 
 MacPilot is a native macOS SwiftUI app that helps Windows users learn Mac keyboard shortcuts and trackpad gestures through short daily lessons, spaced-repetition reviews, and a quick-reference cheat sheet.
 
+**[⬇ Download the latest release](https://github.com/magicmedia123/MacPilot/releases/latest)** · **[Website](https://magicmedia123.github.io/MacPilot/)** · Requires macOS 26+
+
+> First launch: macOS will warn that the app isn't from an identified developer (it's not notarized). Open **System Settings → Privacy & Security** and click **Open Anyway** — or build it yourself in Xcode.
+
 ## Features
 
 - **27 hands-on lessons** across four categories: Keyboard Shortcuts, Touchpad Gestures, Mac Navigation, and Productivity — each pairing the Windows habit with its Mac equivalent, rendered as realistic keycaps.

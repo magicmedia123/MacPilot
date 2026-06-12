@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MacPilot — Learn Mac shortcuts as a Windows switcher</title>
+<meta name="description" content="MacPilot is a free Mac app that turns your Windows muscle memory into Mac fluency with short daily lessons, real keyboard practice, and a Windows → Mac cheat sheet.">
+<meta property="og:title" content="MacPilot — Learn Mac shortcuts as a Windows switcher">
+<meta property="og:description" content="Short daily lessons, real keyboard practice, and a Windows → Mac cheat sheet. Free, open source, 100% local.">
+<meta property="og:image" content="https://magicmedia123.github.io/MacPilot/app-icon.png">
+<link rel="icon" type="image/png" href="app-icon.png">
+<style>
+  :root {
+    --bg: #0b0f1d;
+    --bg-card: #131a2e;
+    --bg-card-hover: #18213a;
+    --border: rgba(255, 255, 255, 0.09);
+    --text: #f2f5fa;
+    --text-dim: #9aa6bd;
+    --accent: #4f8df9;
+    --accent-2: #7a5cf0;
+    --green: #34c77b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+  .brand img { width: 34px; height: 34px; border-radius: 8px; }
+  nav a.gh {
+    color: var(--text-dim); text-decoration: none; font-size: 14px; font-weight: 500;
+    padding: 7px 14px; border: 1px solid var(--border); border-radius: 99px;
+    transition: all .2s;
+  }
+  nav a.gh:hover { color: var(--text); border-color: rgba(255,255,255,.25); }
+
+  /* Hero */
+  .hero { text-align: center; padding: 72px 0 56px; }
+  .hero img.icon {
+    width: 108px; height: 108px; border-radius: 24px;
+    box-shadow: 0 18px 50px rgba(79, 141, 249, 0.35), 0 4px 14px rgba(0,0,0,.5);
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-size: clamp(34px, 6vw, 54px); font-weight: 800; letter-spacing: -0.02em;
+    line-height: 1.12; margin-bottom: 16px;
+  }
+  h1 .grad {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p.sub {
+    font-size: 19px; color: var(--text-dim); max-width: 600px; margin: 0 auto 34px;
+  }
+
+  /* Keycaps */
+  .keys { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 40px; flex-wrap: wrap; }
+  .combo { display: flex; gap: 7px; }
+  .key {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 46px; height: 46px; padding: 0 13px;
+    font-size: 19px; font-weight: 600;
+    font-family: ui-rounded, -apple-system, sans-serif;
+    border-radius: 9px;
+  }
+  .key.win {
+    background: linear-gradient(180deg, #f5f7fa, #d9dee8);
+    color: #2a3142; border: 1px solid #b9c1d0;
+    box-shadow: 0 2.5px 0 #aab3c4, 0 6px 14px rgba(0,0,0,.35);
+  }
+  .key.mac {
+    background: linear-gradient(180deg, #424a60, #1d2333);
+    color: #fff; border: 1px solid rgba(255,255,255,.16);
+    box-shadow: 0 2.5px 0 #0c101c, 0 8px 18px rgba(0,0,0,.5);
+  }
+  .arrow { font-size: 22px; color: var(--accent); font-weight: 700; }
+  .keys .strike { position: relative; }
+  .keys .strike::after {
+    content: ""; position: absolute; left: -6px; right: -6px; top: 50%;
+    height: 2.5px; background: #e0455a; transform: rotate(-6deg); border-radius: 2px; opacity: .85;
+  }
+
+  /* Buttons */
+  .cta-row { display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  a.btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    color: #fff; text-decoration: none; font-weight: 700; font-size: 16px;
+    padding: 14px 28px; border-radius: 13px;
+    box-shadow: 0 10px 28px rgba(79, 141, 249, 0.35);
+    transition: transform .15s, box-shadow .15s;
+  }
+  a.btn:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(79, 141, 249, 0.45); }
+  a.btn-ghost {
+    color: var(--text-dim); text-decoration: none; font-weight: 600; font-size: 15px;
+    padding: 14px 20px; border-radius: 13px; border: 1px solid var(--border);
+    transition: all .2s;
+  }
+  a.btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,.25); }
+  .meta { margin-top: 18px; font-size: 13.5px; color: var(--text-dim); }
+  .meta span { margin: 0 8px; }
+
+  /* Sections */
+  section { padding: 56px 0; }
+  h2 { font-size: 30px; font-weight: 800; letter-spacing: -0.01em; text-align: center; margin-bottom: 10px; }
+  .section-sub { text-align: center; color: var(--text-dim); margin-bottom: 40px; font-size: 16.5px; }
+
+  /* Features */
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;
+  }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; transition: background .2s, transform .2s;
+  }
+  .card:hover { background: var(--bg-card-hover); transform: translateY(-2px); }
+  .card .ic {
+    width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; margin-bottom: 14px; color: #fff;
+  }
+  .card h3 { font-size: 17px; font-weight: 700; margin-bottom: 7px; }
+  .card p { font-size: 14.5px; color: var(--text-dim); }
+
+  /* Install steps */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; counter-reset: step; }
+  .step {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px;
+  }
+  .step .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    font-weight: 800; font-size: 14.5px; margin-bottom: 13px;
+  }
+  .step h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .step p { font-size: 14px; color: var(--text-dim); }
+  .note {
+    max-width: 720px; margin: 26px auto 0; padding: 15px 19px;
+    background: rgba(79, 141, 249, 0.08); border: 1px solid rgba(79, 141, 249, 0.25);
+    border-radius: 13px; font-size: 14px; color: var(--text-dim); text-align: center;
+  }
+  .note strong { color: var(--text); }
+
+  /* Privacy */
+  .privacy {
+    text-align: center; max-width: 640px; margin: 0 auto;
+    padding: 34px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px;
+  }
+  .privacy .lock { font-size: 30px; margin-bottom: 10px; }
+  .privacy h2 { margin-bottom: 8px; }
+  .privacy p { color: var(--text-dim); font-size: 15.5px; }
+
+  footer {
+    border-top: 1px solid var(--border); padding: 30px 0 44px; margin-top: 30px;
+    text-align: center; font-size: 14px; color: var(--text-dim);
+  }
+  footer a { color: var(--text-dim); text-decoration: none; margin: 0 10px; }
+  footer a:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <nav>
+    <div class="brand"><img src="app-icon.png" alt="MacPilot icon"> MacPilot</div>
+    <a class="gh" href="https://github.com/magicmedia123/MacPilot">View on GitHub →</a>
+  </nav>
+
+  <header class="hero">
+    <img class="icon" src="app-icon.png" alt="MacPilot app icon">
+    <h1>Turn Windows muscle memory<br>into <span class="grad">Mac fluency</span></h1>
+    <p class="sub">Short daily lessons that start from the shortcuts you already know — then make the Mac way second nature with real keyboard practice and spaced-repetition reviews.</p>
+
+    <div class="keys" aria-hidden="true">
+      <div class="combo strike">
+        <span class="key win">Ctrl</span><span class="key win">C</span>
+      </div>
+      <span class="arrow">→</span>
+      <div class="combo">
+        <span class="key mac">⌘</span><span class="key mac">C</span>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <a class="btn" href="https://github.com/magicmedia123/MacPilot/releases/latest/download/MacPilot.zip">⬇&nbsp; Download for Mac</a>
+      <a class="btn-ghost" href="https://github.com/magicmedia123/MacPilot/releases/latest">Release notes</a>
+    </div>
+    <p class="meta">Free &amp; open source <span>·</span> Requires macOS 26 or later <span>·</span> 2 MB</p>
+  </header>
+
+  <section id="features">
+    <h2>Everything a switcher needs</h2>
+    <p class="section-sub">27 hands-on lessons across shortcuts, trackpad gestures, navigation, and productivity.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="ic" style="background:linear-gradient(135deg,#4f8df9,#3568d4)">⌘</div>
+        <h3>Real keyboard practice</h3>
+        <p>Don't just read it — press it. MacPilot listens for the actual shortcut and safely catches keys like ⌘W and ⌘Q while you build the habit.</p>
+      </div>
+      <div class="card">
+        <div class="ic" style="background:linear-gradient(135deg,#26b8a5,#168f80)">⇄</div>
+        <h3>Windows → Mac cheat sheet</h3>
+        <p>Every mapping in one searchable reference. Your old habit on the left, the Mac way on the right — click any row to open its lesson.</p>
+      </div>
+      <div class="card">
+        <div class="ic" style="background:linear-gradient(135deg,#7a5cf0,#5a3fd4)">🧠</div>
+        <h3>Spaced repetition</h3>
+        <p>Completed shortcuts come back for quick recall sessions right before you'd forget them, so they stick for good.</p>
+      </div>
+      <div class="card">
+        <div class="ic" style="background:linear-gradient(135deg,#f29a3a,#df7714)">🔥</div>
+        <h3>Streaks &amp; achievements</h3>
+        <p>One short lesson a day keeps the streak alive. Badges mark your milestones from first shortcut to Mac Pilot Master.</p>
+      </div>
+      <div class="card">
+        <div class="ic" style="background:linear-gradient(135deg,#34c77b,#1d9e58)">🎯</div>
+        <h3>Personalized path</h3>
+        <p>Tell MacPilot which Windows apps you lived in and what you want to learn first — it picks your next lesson and explains why.</p>
+      </div>
+      <div class="card">
+        <div class="ic" style="background:linear-gradient(135deg,#5b6df0,#3b4cd0)">🖐️</div>
+        <h3>Trackpad gestures too</h3>
+        <p>Scrolling, Mission Control, desktop switching, smart zoom — the gestures that replace a mouse and a pile of window clicks.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <h2>Install in under a minute</h2>
+    <p class="section-sub">MacPilot is distributed free outside the App Store.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <h3>Download &amp; unzip</h3>
+        <p>Grab <strong>MacPilot.zip</strong>, double-click to unzip, and drag MacPilot into your <strong>Applications</strong> folder.</p>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <h3>Open it once</h3>
+        <p>Double-click MacPilot. macOS will say it can't verify the developer — that's expected for apps outside the App Store.</p>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <h3>Approve it</h3>
+        <p>Open <strong>System Settings → Privacy &amp; Security</strong>, scroll down, and click <strong>Open Anyway</strong>. You only do this once.</p>
+      </div>
+    </div>
+    <p class="note"><strong>Why the warning?</strong> MacPilot isn't notarized by Apple (that requires a paid developer account). The app is open source — you can read every line of code on GitHub, or build it yourself in Xcode.</p>
+  </section>
+
+  <section>
+    <div class="privacy">
+      <div class="lock">🔒</div>
+      <h2>100% private, 100% local</h2>
+      <p>No account, no analytics, no network calls. Your lessons, streaks, and progress live in a local database on your Mac and never leave it.</p>
+    </div>
+  </section>
+
+  <footer>
+    <a href="https://github.com/magicmedia123/MacPilot">GitHub</a> ·
+    <a href="https://github.com/magicmedia123/MacPilot/releases/latest">Download</a> ·
+    <a href="https://github.com/magicmedia123/MacPilot/blob/main/PRIVACY_POLICY.md">Privacy Policy</a>
+    <p style="margin-top:12px">MacPilot — made for Windows switchers.</p>
+  </footer>
+</div>
+
+</body>
+</html>
