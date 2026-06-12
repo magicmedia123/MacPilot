@@ -2,61 +2,86 @@ import SwiftData
 import SwiftUI
 
 struct ReviewCard: View {
-    @Environment(\.modelContext) private var modelContext
     @Query private var reviewItems: [ReviewItem]
     @Query private var lessons: [Lesson]
-    
+
     @State private var showingReviewSession = false
-    
+
     private var dueItems: [ReviewItem] {
         let today = Calendar.current.startOfDay(for: .now)
-        // Item is due if nextReviewDate is today or earlier
         return reviewItems.filter { item in
             Calendar.current.startOfDay(for: item.nextReviewDate) <= today
         }
     }
-    
+
+    private var nextUpcomingReview: Date? {
+        let today = Calendar.current.startOfDay(for: .now)
+        return reviewItems
+            .map(\.nextReviewDate)
+            .filter { Calendar.current.startOfDay(for: $0) > today }
+            .min()
+    }
+
     var body: some View {
-        CardView {
-            HStack(alignment: .top, spacing: 18) {
-                Image(systemName: "arrow.clockwise.circle.fill")
-                    .font(.system(size: 32, weight: .medium))
-                    .foregroundStyle(dueItems.isEmpty ? Color.secondary : Color.accentColor)
-                    .frame(width: 56, height: 56)
-                    .background((dueItems.isEmpty ? Color.gray : Color.accentColor).opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Spaced Repetition Review")
-                        .font(.headline)
-                    
+        CardView(padding: 22) {
+            HStack(alignment: .top, spacing: 16) {
+                IconTile(
+                    systemImage: "arrow.clockwise",
+                    tint: dueItems.isEmpty ? .gray : .indigo,
+                    size: 54,
+                    cornerRadius: 12
+                )
+
+                VStack(alignment: .leading, spacing: 7) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "brain.head.profile")
+                            .font(.caption.weight(.semibold))
+                        Text("Spaced repetition")
+                            .font(.caption.weight(.bold))
+                            .textCase(.uppercase)
+                            .kerning(0.6)
+                    }
+                    .foregroundStyle(.indigo)
+
                     if dueItems.isEmpty {
                         Text("All caught up!")
                             .font(.title2.weight(.semibold))
-                        
-                        Text("You have reviewed all completed shortcuts. New reviews will be scheduled automatically.")
-                            .foregroundStyle(.secondary)
+
+                        if reviewItems.isEmpty {
+                            Text("Complete lessons to start collecting shortcuts for review.")
+                                .foregroundStyle(.secondary)
+                        } else if let next = nextUpcomingReview {
+                            Text("Next review \(next.formatted(.relative(presentation: .named))). Reviews are spaced out as your recall improves.")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Reviews are scheduled automatically as you complete lessons.")
+                                .foregroundStyle(.secondary)
+                        }
                     } else {
-                        Text("\(dueItems.count) due for review")
+                        Text("\(dueItems.count) shortcut\(dueItems.count == 1 ? "" : "s") due for review")
                             .font(.title2.weight(.semibold))
-                        
-                        Text("Practice your completed shortcuts to build strong muscle memory.")
+
+                        Text("A quick recall session locks shortcuts into long-term memory.")
                             .foregroundStyle(.secondary)
-                        
+
                         Button {
                             showingReviewSession = true
                         } label: {
-                            Label("Start Review Session", systemImage: "play.fill")
+                            Label("Start Review", systemImage: "play.fill")
+                                .padding(.horizontal, 4)
                         }
-                        .buttonStyle(BorderedProminentButtonStyle())
+                        .buttonStyle(.borderedProminent)
+                        .tint(.indigo)
+                        .padding(.top, 4)
                     }
                 }
-                
+
                 Spacer()
             }
         }
         .sheet(isPresented: $showingReviewSession) {
             ReviewSessionView(dueItems: dueItems, lessons: lessons)
-                .frame(width: 500, height: 400)
+                .frame(width: 540, height: 470)
         }
     }
 }
@@ -64,211 +89,251 @@ struct ReviewCard: View {
 struct ReviewSessionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    
+
     let dueItems: [ReviewItem]
     let lessons: [Lesson]
-    
+
     @State private var currentIndex = 0
     @State private var revealAnswer = false
     @State private var showsCelebration = false
-    
+
     private var currentItem: ReviewItem? {
         guard currentIndex < dueItems.count else { return nil }
         return dueItems[currentIndex]
     }
-    
+
     private var currentLesson: Lesson? {
         guard let item = currentItem else { return nil }
         return lessons.first(where: { $0.id == item.lessonId })
     }
-    
+
     var body: some View {
-        VStack {
+        VStack(spacing: 18) {
             if showsCelebration {
                 celebrationView
             } else if let lesson = currentLesson, let item = currentItem {
-                sessionProgress
-                
-                Spacer()
-                
-                lessonCard(lesson: lesson)
-                
-                Spacer()
-                
+                sessionHeader
+
+                Spacer(minLength: 0)
+
+                recallCard(lesson: lesson)
+
+                Spacer(minLength: 0)
+
                 if revealAnswer {
-                    actionButtons(item: item)
+                    recallButtons(item: item)
                 } else {
                     Button {
-                        withAnimation { revealAnswer = true }
+                        withAnimation(.spring(duration: 0.35)) { revealAnswer = true }
                     } label: {
-                        Text("Reveal Mac Action")
+                        Label("Reveal Mac Shortcut", systemImage: "eye")
                             .font(.headline)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 6)
                     }
-                    .buttonStyle(BorderedProminentButtonStyle())
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.space, modifiers: [])
                 }
             } else {
                 noItemsView
             }
         }
-        .padding(32)
+        .padding(28)
+        .background(Color(nsColor: .windowBackgroundColor))
         .overlay {
             if showsCelebration {
                 ConfettiView(isActive: $showsCelebration)
             }
         }
     }
-    
-    private var sessionProgress: some View {
-        VStack(spacing: 8) {
+
+    private var sessionHeader: some View {
+        VStack(spacing: 9) {
             HStack {
-                Text("Review Session")
+                Label("Review Session", systemImage: "brain.head.profile")
                     .font(.headline)
+
                 Spacer()
+
                 Text("\(currentIndex + 1) of \(dueItems.count)")
-                    .font(.subheadline)
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
+
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .help("End session")
             }
-            
-            ProgressView(value: Double(currentIndex), total: Double(dueItems.count))
-                .tint(Color.accentColor)
+
+            ProgressView(value: Double(currentIndex), total: Double(max(dueItems.count, 1)))
+                .tint(.indigo)
         }
     }
-    
-    private func lessonCard(lesson: Lesson) -> some View {
-        VStack(spacing: 20) {
-            Image(systemName: lesson.symbolName)
-                .font(.system(size: 48))
-                .foregroundStyle(Color.accentColor)
-            
-            VStack(spacing: 8) {
-                Text("Habit to replace (Windows)")
+
+    private func recallCard(lesson: Lesson) -> some View {
+        VStack(spacing: 22) {
+            IconTile(systemImage: lesson.symbolName, tint: lesson.category.tint, size: 52, cornerRadius: 12)
+
+            VStack(spacing: 9) {
+                Text("Your old Windows habit")
                     .font(.caption.weight(.bold))
+                    .textCase(.uppercase)
+                    .kerning(0.5)
                     .foregroundStyle(.secondary)
-                
-                // Show windows equivalent of first step
-                Text(lesson.steps.first?.windowsEquivalent ?? "Equivalent action")
-                    .font(.title2.weight(.semibold))
-                    .strikethrough()
-                    .foregroundStyle(.secondary)
+
+                ShortcutDisplay(
+                    text: lesson.steps.sorted { $0.sortOrder < $1.sortOrder }.first?.windowsEquivalent ?? "—",
+                    style: .windows,
+                    fallbackIcon: "computermouse"
+                )
             }
-            
+
             if revealAnswer {
-                VStack(spacing: 8) {
-                    Text("Mac Action")
+                VStack(spacing: 9) {
+                    Text("The Mac way")
                         .font(.caption.weight(.bold))
+                        .textCase(.uppercase)
+                        .kerning(0.5)
                         .foregroundStyle(Color.accentColor)
-                    
-                    Text(lesson.steps.first?.macAction ?? "Mac equivalent")
-                        .font(.largeTitle.weight(.bold))
-                        .foregroundStyle(.primary)
-                        .scaleEffect(revealAnswer ? 1.05 : 1.0)
-                        .animation(.spring(duration: 0.4), value: revealAnswer)
+
+                    ShortcutDisplay(
+                        text: lesson.steps.sorted { $0.sortOrder < $1.sortOrder }.first?.macAction ?? "—",
+                        style: .mac,
+                        fallbackIcon: lesson.category == .gestures ? "hand.draw" : "macwindow",
+                        large: true
+                    )
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             } else {
-                Text("Press 'Reveal' to check if you remember the Mac equivalent.")
+                Text("Can you remember the Mac equivalent?")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
             }
         }
-        .padding(24)
+        .padding(26)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.gray.opacity(0.12), lineWidth: 1)
-        )
+        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(.separator.opacity(0.4))
+        }
     }
-    
-    private func actionButtons(item: ReviewItem) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("How well did you recall this?")
-                .font(.caption.weight(.bold))
+
+    private func recallButtons(item: ReviewItem) -> some View {
+        VStack(spacing: 10) {
+            Text("How well did you remember?")
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .center)
-            
+
             HStack(spacing: 8) {
-                // Forgot (Quality 1)
-                recallButton(title: "Forgot 🔴", quality: 1, item: item)
-                
-                // Hard (Quality 3)
-                recallButton(title: "Hard 🟡", quality: 3, item: item)
-                
-                // Good (Quality 4)
-                recallButton(title: "Good 🟢", quality: 4, item: item)
-                
-                // Easy (Quality 5)
-                recallButton(title: "Easy 🔵", quality: 5, item: item)
+                RecallButton(title: "Forgot", systemImage: "xmark", tint: .red) {
+                    advance(item: item, quality: 1)
+                }
+                RecallButton(title: "Hard", systemImage: "tortoise", tint: .orange) {
+                    advance(item: item, quality: 3)
+                }
+                RecallButton(title: "Good", systemImage: "checkmark", tint: .green) {
+                    advance(item: item, quality: 4)
+                }
+                RecallButton(title: "Easy", systemImage: "hare", tint: .blue) {
+                    advance(item: item, quality: 5)
+                }
+            }
+        }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    private func advance(item: ReviewItem, quality: Int) {
+        item.updateRecall(quality: quality)
+        try? modelContext.save()
+
+        if currentIndex + 1 < dueItems.count {
+            withAnimation {
+                revealAnswer = false
+                currentIndex += 1
+            }
+        } else {
+            withAnimation {
+                showsCelebration = true
             }
         }
     }
-    
-    private func recallButton(title: String, quality: Int, item: ReviewItem) -> some View {
-        Button {
-            item.updateRecall(quality: quality)
-            try? modelContext.save()
-            
-            if currentIndex + 1 < dueItems.count {
-                withAnimation {
-                    revealAnswer = false
-                    currentIndex += 1
-                }
-            } else {
-                withAnimation {
-                    showsCelebration = true
-                }
-            }
-        } label: {
-            Text(title)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
-        }
-        .buttonStyle(BorderedButtonStyle())
-    }
-    
+
     private var celebrationView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 22) {
             Spacer()
-            
+
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 64))
+                .font(.system(size: 60))
                 .foregroundStyle(.green)
-            
+
             VStack(spacing: 8) {
-                Text("Review Session Complete!")
+                Text("Session complete!")
                     .font(.title.weight(.bold))
-                
-                Text("Great job! You reviewed \(dueItems.count) shortcuts. Spaced repetition has rescheduled these based on your recall quality.")
-                    .font(.body)
+
+                Text("You reviewed \(dueItems.count) shortcut\(dueItems.count == 1 ? "" : "s"). Each one is rescheduled based on how well you remembered it.")
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
-            
+
             Spacer()
-            
+
             Button {
                 dismiss()
             } label: {
-                Text("Close")
-                    .frame(width: 120)
+                Text("Done")
+                    .frame(width: 130)
             }
-            .buttonStyle(BorderedProminentButtonStyle())
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.defaultAction)
         }
     }
-    
+
     private var noItemsView: some View {
         VStack(spacing: 16) {
-            Text("No items due for review.")
-                .font(.headline)
-            
-            Button("Dismiss") {
+            EmptyStateView(
+                title: "Nothing due right now",
+                message: "Reviews appear here as their schedule comes up.",
+                systemImage: "checkmark.circle"
+            )
+
+            Button("Close") {
                 dismiss()
             }
-            .buttonStyle(BorderedButtonStyle())
+            .buttonStyle(.bordered)
         }
+    }
+}
+
+private struct RecallButton: View {
+    let title: String
+    let systemImage: String
+    let tint: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 5) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 14, weight: .semibold))
+
+                Text(title)
+                    .font(.callout.weight(.medium))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 9)
+            .foregroundStyle(tint)
+            .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(tint.opacity(0.3))
+            }
+        }
+        .buttonStyle(.plain)
     }
 }

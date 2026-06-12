@@ -74,23 +74,48 @@ enum SampleDataSeeder {
         }
     }
 
+    /// Achievement definitions derive their lesson-count copy from the catalog,
+    /// so the text stays accurate as lessons are added.
+    private static var achievementDefinitions: [(id: String, title: String, detail: String, symbolName: String)] {
+        let totalLessons = MockLessonData.lessons.count
+        let halfway = AchievementService.halfwayThreshold(totalLessons: totalLessons)
+
+        return [
+            ("first-shortcut", "First Step", "Complete your first lesson.", "trophy"),
+            ("comfort-zone", "Getting Comfortable", "Complete 5 lessons.", "sparkles"),
+            ("halfway", "Halfway There", "Complete \(halfway) lessons.", "gauge.with.needle"),
+            ("master", "Mac Pilot Master", "Complete all \(totalLessons) lessons.", "crown"),
+            ("streak-3", "Consistency Kid", "Achieve a 3-day learning streak.", "flame"),
+            ("streak-7", "Weekly Warrior", "Achieve a 7-day learning streak.", "bolt"),
+            ("polymath", "Fast Learner", "Complete 3 lessons in a single day.", "speedometer")
+        ]
+    }
+
     @MainActor
     private static func seedAchievementsIfNeeded(in modelContext: ModelContext) {
         let descriptor = FetchDescriptor<Achievement>()
-        guard (try? modelContext.fetch(descriptor).isEmpty) == true else {
+        guard let saved = try? modelContext.fetch(descriptor) else {
             return
         }
-        
-        let initialAchievements = [
-            Achievement(id: "first-shortcut", title: "First Step", detail: "Complete your first lesson.", symbolName: "trophy"),
-            Achievement(id: "comfort-zone", title: "Getting Comfortable", detail: "Complete 5 lessons.", symbolName: "sparkles"),
-            Achievement(id: "halfway", title: "Halfway There", detail: "Complete 12 lessons.", symbolName: "gauge.with.needle"),
-            Achievement(id: "master", title: "Mac Pilot Master", detail: "Complete all 25 lessons.", symbolName: "crown"),
-            Achievement(id: "streak-3", title: "Consistency Kid", detail: "Achieve a 3-day learning streak.", symbolName: "flame"),
-            Achievement(id: "streak-7", title: "Weekly Warrior", detail: "Achieve a 7-day learning streak.", symbolName: "bolt"),
-            Achievement(id: "polymath", title: "Fast Learner", detail: "Complete 3 lessons in a single day.", symbolName: "speedometer")
-        ]
-        
-        initialAchievements.forEach { modelContext.insert($0) }
+
+        let savedById = Dictionary(uniqueKeysWithValues: saved.map { ($0.id, $0) })
+
+        for definition in achievementDefinitions {
+            if let existing = savedById[definition.id] {
+                // Existing users keep their unlock state but get refreshed copy.
+                existing.title = definition.title
+                existing.detail = definition.detail
+                existing.symbolName = definition.symbolName
+            } else {
+                modelContext.insert(
+                    Achievement(
+                        id: definition.id,
+                        title: definition.title,
+                        detail: definition.detail,
+                        symbolName: definition.symbolName
+                    )
+                )
+            }
+        }
     }
 }

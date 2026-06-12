@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct HomeView: View {
-    @Binding var selection: SidebarItem?
+    @Environment(AppRouter.self) private var router
     @State private var isVisible = false
     @Query(sort: \Lesson.sortOrder) private var lessons: [Lesson]
     @Query private var progressRecords: [UserProgress]
@@ -24,40 +24,44 @@ struct HomeView: View {
         }
     }
 
+    /// Days on which the user practiced, derived from lesson completions
+    /// and the recorded last practice date.
+    private var practicedDays: Set<Date> {
+        let calendar = Calendar.current
+        var days = Set(lessons.compactMap { lesson in
+            lesson.completedAt.map { calendar.startOfDay(for: $0) }
+        })
+        if let lastPractice = progress?.lastPracticeDate {
+            days.insert(calendar.startOfDay(for: lastPractice))
+        }
+        return days
+    }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                header
+            VStack(alignment: .leading, spacing: 20) {
+                hero
                     .opacity(isVisible ? 1 : 0)
                     .offset(y: isVisible ? 0 : 16)
 
-                metrics
+                upNext
                     .opacity(isVisible ? 1 : 0)
                     .offset(y: isVisible ? 0 : 16)
                     .animation(.easeOut(duration: 0.5).delay(0.1), value: isVisible)
 
-                todaysPlan
+                ReviewCard()
                     .opacity(isVisible ? 1 : 0)
                     .offset(y: isVisible ? 0 : 16)
                     .animation(.easeOut(duration: 0.5).delay(0.2), value: isVisible)
 
-                ReviewCard()
-                    .opacity(isVisible ? 1 : 0)
-                    .offset(y: isVisible ? 0 : 16)
-                    .animation(.easeOut(duration: 0.5).delay(0.25), value: isVisible)
-
-                continueLearning
-                    .opacity(isVisible ? 1 : 0)
-                    .offset(y: isVisible ? 0 : 16)
-                    .animation(.easeOut(duration: 0.5).delay(0.3), value: isVisible)
-
                 gettingStarted
                     .opacity(isVisible ? 1 : 0)
                     .offset(y: isVisible ? 0 : 16)
-                    .animation(.easeOut(duration: 0.5).delay(0.4), value: isVisible)
+                    .animation(.easeOut(duration: 0.5).delay(0.3), value: isVisible)
             }
             .padding(28)
             .frame(maxWidth: 1040, alignment: .leading)
+            .frame(maxWidth: .infinity)
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .navigationTitle("Home")
@@ -68,153 +72,273 @@ struct HomeView: View {
         }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(greeting)
-                .font(.largeTitle.weight(.semibold))
+    // MARK: - Hero
 
-            Text(viewModel.welcomeSubtitle)
-                .font(.title3)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var metrics: some View {
-        Grid(horizontalSpacing: 14, verticalSpacing: 14) {
-            GridRow {
-                MetricTile(
-                    title: "Lessons completed",
-                    value: "\(viewModel.completedLessons)/\(lessons.count)",
-                    systemImage: "checkmark.circle",
-                    tint: .green
-                )
-
-                MetricTile(
-                    title: "Current streak",
-                    value: "\(progress?.currentStreak ?? 0) days",
-                    systemImage: "flame",
-                    tint: .orange
-                )
-
-                MetricTile(
-                    title: "Overall progress",
-                    value: "\(Int(viewModel.completionRatio * 100))%",
-                    systemImage: "chart.pie",
-                    tint: .blue
-                )
-            }
-        }
-    }
-
-    private var continueLearning: some View {
-        CardView {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .top) {
+    private var hero: some View {
+        CardView(padding: 24, hoverLift: false) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 20) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Continue learning")
-                            .font(.headline)
+                        Text("\(greeting) 👋")
+                            .font(.system(size: 30, weight: .bold))
 
-                        Text(viewModel.nextLesson?.title ?? "No lessons yet")
-                            .font(.title2.weight(.semibold))
-
-                        Text(viewModel.nextLesson?.summary ?? "New lessons will appear here.")
+                        Text(viewModel.welcomeSubtitle)
+                            .font(.title3)
                             .foregroundStyle(.secondary)
                     }
 
                     Spacer()
 
-                    Image(systemName: viewModel.nextLesson?.symbolName ?? "command")
-                        .font(.system(size: 34, weight: .medium))
-                        .foregroundStyle(.blue)
+                    ProgressRing(
+                        progress: viewModel.completionRatio,
+                        lineWidth: 9,
+                        size: 78,
+                        tint: .blue
+                    )
                 }
 
-                ProgressView(value: viewModel.completionRatio)
-                    .tint(.blue)
+                HStack(spacing: 10) {
+                    HeroStat(
+                        value: "\(viewModel.completedLessons)",
+                        label: "lessons done",
+                        systemImage: "checkmark.circle.fill",
+                        tint: .green
+                    )
 
-                HStack {
-                    Label(viewModel.dailyGoalText, systemImage: viewModel.completedToday ? "checkmark.seal.fill" : "target")
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(viewModel.completedToday ? .green : .secondary)
+                    HeroStat(
+                        value: "\(progress?.displayStreak ?? 0)",
+                        label: "day streak",
+                        systemImage: "flame.fill",
+                        tint: .orange
+                    )
+
+                    HeroStat(
+                        value: "\(progress?.bestStreak ?? 0)",
+                        label: "best streak",
+                        systemImage: "rosette",
+                        tint: .purple
+                    )
 
                     Spacer()
-                }
 
-                Label(viewModel.migrationSummary, systemImage: "person.crop.circle.badge.checkmark")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-
-                Button {
-                    selection = .lessons
-                } label: {
-                    Label("Open Lessons", systemImage: "arrow.right.circle")
+                    WeekActivityStrip(practicedDays: practicedDays)
                 }
-                .buttonStyle(BorderedProminentButtonStyle())
             }
         }
     }
 
-    private var todaysPlan: some View {
-        CardView {
-            HStack(alignment: .top, spacing: 18) {
-                Image(systemName: viewModel.completedToday ? "checkmark.seal.fill" : "target")
-                    .font(.system(size: 32, weight: .medium))
-                    .foregroundStyle(viewModel.completedToday ? .green : .blue)
-                    .frame(width: 56, height: 56)
-                    .background((viewModel.completedToday ? Color.green : Color.blue).opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    // MARK: - Up next
 
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(viewModel.todayPlanTitle)
-                        .font(.headline)
+    @ViewBuilder
+    private var upNext: some View {
+        if viewModel.allLessonsCompleted {
+            allDoneCard
+        } else if let lesson = viewModel.nextLesson {
+            upNextCard(for: lesson)
+        }
+    }
 
-                    Text(viewModel.nextLesson?.title ?? "No lesson available")
+    private func upNextCard(for lesson: Lesson) -> some View {
+        CardView(padding: 22) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.caption.weight(.semibold))
+                    Text("Up next")
+                        .font(.caption.weight(.bold))
+                        .textCase(.uppercase)
+                        .kerning(0.6)
+                }
+                .foregroundStyle(Color.accentColor)
+
+                HStack(alignment: .top, spacing: 16) {
+                    IconTile(systemImage: lesson.symbolName, tint: lesson.category.tint, size: 54, cornerRadius: 12)
+
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text(lesson.title)
+                            .font(.title2.weight(.semibold))
+
+                        Text(lesson.summary)
+                            .foregroundStyle(.secondary)
+
+                        HStack(spacing: 7) {
+                            MetaChip(text: lesson.category.shortName, systemImage: lesson.category.symbolName, tint: lesson.category.tint)
+                            DifficultyBadge(difficulty: lesson.difficulty)
+                            MetaChip(text: "\(lesson.estimatedMinutes) min", systemImage: "clock")
+                        }
+                    }
+
+                    Spacer()
+
+                    if let firstStep = lesson.steps.sorted(by: { $0.sortOrder < $1.sortOrder }).first,
+                       ShortcutParser.keycapGroups(from: firstStep.macAction, style: .mac) != nil {
+                        ShortcutDisplay(text: firstStep.macAction, style: .mac)
+                            .padding(.top, 4)
+                    }
+                }
+
+                Label(viewModel.recommendationReason, systemImage: "lightbulb")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
+                Divider()
+
+                HStack {
+                    Button {
+                        router.openLesson(id: lesson.id)
+                    } label: {
+                        Label("Start Lesson", systemImage: "play.fill")
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+
+                    Spacer()
+
+                    Label(
+                        viewModel.dailyGoalText,
+                        systemImage: viewModel.completedToday ? "checkmark.seal.fill" : "target"
+                    )
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(viewModel.completedToday ? .green : .secondary)
+                }
+            }
+        }
+    }
+
+    private var allDoneCard: some View {
+        CardView(padding: 22) {
+            HStack(spacing: 18) {
+                IconTile(systemImage: "trophy.fill", tint: .orange, size: 54, cornerRadius: 12)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("You've completed every lesson! 🎉")
                         .font(.title2.weight(.semibold))
 
-                    Text(viewModel.recommendationReason)
+                    Text("Keep your Mac muscle memory sharp with spaced repetition reviews, or browse the cheat sheet anytime.")
                         .foregroundStyle(.secondary)
-
-                    Label(viewModel.todayPlanStatus, systemImage: viewModel.completedToday ? "checkmark.circle" : "clock")
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(viewModel.completedToday ? .green : .secondary)
                 }
 
                 Spacer()
 
                 Button {
-                    selection = .lessons
+                    router.selection = .cheatSheet
                 } label: {
-                    Label("Start", systemImage: "play.circle")
+                    Label("Cheat Sheet", systemImage: "command")
                 }
-                .buttonStyle(BorderedProminentButtonStyle())
-                .disabled(lessons.isEmpty)
+                .buttonStyle(.bordered)
+                .controlSize(.large)
             }
         }
     }
 
+    // MARK: - Tips
+
     private var gettingStarted: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Beginner path")
+            Text("Tips for switchers")
                 .font(.headline)
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 14)], spacing: 14) {
                 HomeTip(
                     title: "Start with Command",
-                    message: "Most Ctrl shortcuts become Command shortcuts on Mac.",
-                    systemImage: "command"
+                    message: "Most Ctrl shortcuts become Command shortcuts on Mac — your fingers already know the patterns.",
+                    systemImage: "command",
+                    tint: .blue
                 )
 
                 HomeTip(
-                    title: "Use the trackpad",
+                    title: "Trust the trackpad",
                     message: "Two and three finger gestures replace a lot of window management clicks.",
-                    systemImage: "hand.tap"
+                    systemImage: "hand.draw.fill",
+                    tint: .teal
                 )
 
                 HomeTip(
                     title: "Practice daily",
-                    message: "Finishing one short lesson keeps your streak alive.",
-                    systemImage: "calendar.badge.clock"
+                    message: "Finishing one short lesson keeps your streak alive and builds real muscle memory.",
+                    systemImage: "flame.fill",
+                    tint: .orange
                 )
             }
         }
+    }
+}
+
+// MARK: - Components
+
+private struct HeroStat: View {
+    let value: String
+    let label: String
+    let systemImage: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Image(systemName: systemImage)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(tint)
+
+            Text(value)
+                .font(.system(.body, design: .rounded).weight(.bold))
+                .contentTransition(.numericText())
+
+            Text(label)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
+        .background(tint.opacity(0.1), in: Capsule())
+    }
+}
+
+/// The last seven days as small day markers, filled when the user practiced.
+private struct WeekActivityStrip: View {
+    let practicedDays: Set<Date>
+
+    private var days: [Date] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        return (0..<7).reversed().compactMap {
+            calendar.date(byAdding: .day, value: -$0, to: today)
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 7) {
+            ForEach(days, id: \.self) { day in
+                let practiced = practicedDays.contains(day)
+                let isToday = Calendar.current.isDateInToday(day)
+
+                VStack(spacing: 4) {
+                    Text(day, format: .dateTime.weekday(.narrow))
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(isToday ? Color.accentColor : Color.secondary)
+
+                    ZStack {
+                        Circle()
+                            .fill(practiced ? AnyShapeStyle(Color.green) : AnyShapeStyle(.quaternary))
+                            .frame(width: 19, height: 19)
+
+                        if practiced {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    .overlay {
+                        if isToday {
+                            Circle()
+                                .strokeBorder(Color.accentColor, lineWidth: 1.5)
+                                .frame(width: 25, height: 25)
+                        }
+                    }
+                }
+            }
+        }
+        .help("Your practice activity over the last 7 days")
     }
 }
 
@@ -222,13 +346,12 @@ private struct HomeTip: View {
     let title: String
     let message: String
     let systemImage: String
+    let tint: Color
 
     var body: some View {
         CardView {
             VStack(alignment: .leading, spacing: 10) {
-                Image(systemName: systemImage)
-                    .font(.title2)
-                    .foregroundStyle(.blue)
+                IconTile(systemImage: systemImage, tint: tint, size: 34, cornerRadius: 8)
 
                 Text(title)
                     .font(.headline)
@@ -236,8 +359,9 @@ private struct HomeTip: View {
                 Text(message)
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(minHeight: 112, alignment: .topLeading)
+            .frame(minHeight: 118, alignment: .topLeading)
         }
     }
 }

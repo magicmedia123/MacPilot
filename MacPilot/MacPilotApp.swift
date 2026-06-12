@@ -5,6 +5,8 @@ import SwiftUI
 struct MacPilotApp: App {
     private let modelContainer: ModelContainer
 
+    @AppStorage("appearanceMode") private var appearanceMode = AppearanceMode.system
+
     init() {
         do {
             let schema = Schema([
@@ -24,9 +26,21 @@ struct MacPilotApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 980, minHeight: 660)
+                .frame(minWidth: 1000, minHeight: 680)
+                .preferredColorScheme(appearanceMode.colorScheme)
         }
         .modelContainer(modelContainer)
         .windowStyle(.titleBar)
+        .commands {
+            // A shortcuts-learning app should itself be driveable by shortcuts.
+            CommandMenu("Go") {
+                ForEach(SidebarItem.allCases) { item in
+                    Button(item.title) {
+                        AppRouter.shared.selection = item
+                    }
+                    .keyboardShortcut(item.keyEquivalent, modifiers: .command)
+                }
+            }
+        }
     }
 }

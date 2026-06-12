@@ -5,15 +5,16 @@ import SwiftUI
 struct LessonDetailView: View {
     let initialLesson: Lesson
     @State private var lesson: Lesson
-    
+
     @Environment(\.modelContext) private var modelContext
     @Query private var lessons: [Lesson]
     @Query private var progressRecords: [UserProgress]
-    
+
     init(lesson: Lesson) {
         self.initialLesson = lesson
         self._lesson = State(initialValue: lesson)
     }
+
     @State private var selectedQuizAnswer: String?
     @State private var capturedShortcut: CapturedShortcut?
     @State private var hasCompletedKeyboardPractice = false
@@ -42,7 +43,7 @@ struct LessonDetailView: View {
         .sorted()
     }
 
-    private var hasAnsweredQuizCorrectly: Bool {
+    private var hasPassedPracticeCheck: Bool {
         hasCompletedKeyboardPractice || selectedQuizAnswer == correctQuizAnswer || lesson.isCompleted
     }
 
@@ -52,6 +53,10 @@ struct LessonDetailView: View {
 
     private var canUseKeyboardPractice: Bool {
         expectedShortcut != nil
+    }
+
+    private var macFallbackIcon: String {
+        lesson.category == .gestures ? "hand.draw" : "macwindow"
     }
 
     var body: some View {
@@ -67,22 +72,25 @@ struct LessonDetailView: View {
                 completionControl
             }
             .padding(28)
-            .frame(maxWidth: 860, alignment: .leading)
+            .frame(maxWidth: 880, alignment: .leading)
+            .frame(maxWidth: .infinity)
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .navigationTitle(lesson.title)
         .overlay(alignment: .top) {
             if showsCompletionToast {
-                HStack(spacing: 8) {
-                    Text("🎉 Lesson Complete!")
-                        .font(.headline)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(.regularMaterial, in: Capsule())
-                .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
-                .padding(.top, 12)
-                .transition(.move(edge: .top).combined(with: .opacity))
+                Label("Lesson Complete!", systemImage: "checkmark.seal.fill")
+                    .font(.headline)
+                    .foregroundStyle(.green)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(.regularMaterial, in: Capsule())
+                    .overlay {
+                        Capsule().strokeBorder(.green.opacity(0.3))
+                    }
+                    .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+                    .padding(.top, 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .overlay {
@@ -101,35 +109,32 @@ struct LessonDetailView: View {
             }
         }
         .onChange(of: initialLesson) { _, newLesson in
+            resetPracticeState()
             lesson = newLesson
-            capturedShortcut = nil
-            hasCompletedKeyboardPractice = false
-            selectedQuizAnswer = nil
-            showsCompletionCelebration = false
-            showsCompletionToast = false
         }
     }
 
-    private var header: some View {
-        CardView {
-            HStack(alignment: .top, spacing: 18) {
-                Image(systemName: lesson.symbolName)
-                    .font(.system(size: 38, weight: .medium))
-                    .foregroundStyle(.blue)
-                    .frame(width: 62, height: 62)
-                    .background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    // MARK: - Header
 
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Text(lesson.category.rawValue)
-                        Text(lesson.difficulty.rawValue)
-                        Text("\(lesson.estimatedMinutes) min")
+    private var header: some View {
+        CardView(padding: 22, hoverLift: false) {
+            HStack(alignment: .top, spacing: 18) {
+                IconTile(systemImage: lesson.symbolName, tint: lesson.category.tint, size: 62, cornerRadius: 14)
+                    .padding(.top, 2)
+
+                VStack(alignment: .leading, spacing: 9) {
+                    HStack(spacing: 7) {
+                        MetaChip(text: lesson.category.shortName, systemImage: lesson.category.symbolName, tint: lesson.category.tint)
+                        DifficultyBadge(difficulty: lesson.difficulty)
+                        MetaChip(text: "\(lesson.estimatedMinutes) min", systemImage: "clock")
+
+                        if lesson.isCompleted {
+                            MetaChip(text: "Completed", systemImage: "checkmark.circle.fill", tint: .green)
+                        }
                     }
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
 
                     Text(lesson.title)
-                        .font(.largeTitle.weight(.semibold))
+                        .font(.system(size: 28, weight: .bold))
 
                     Text(lesson.summary)
                         .font(.title3)
@@ -141,92 +146,79 @@ struct LessonDetailView: View {
         }
     }
 
+    // MARK: - Steps
+
     private var stepList: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Practice steps")
                 .font(.headline)
 
-            ForEach(sortedSteps) { step in
-                CardView {
-                    VStack(alignment: .leading, spacing: 12) {
+            ForEach(Array(sortedSteps.enumerated()), id: \.element.sortOrder) { index, step in
+                stepCard(step, number: index + 1)
+            }
+        }
+    }
+
+    private func stepCard(_ step: LessonStep, number: Int) -> some View {
+        CardView {
+            VStack(alignment: .leading, spacing: 13) {
+                HStack(alignment: .firstTextBaseline, spacing: 11) {
+                    Text("\(number)")
+                        .font(.system(.callout, design: .rounded).weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 24, height: 24)
+                        .background(lesson.category.tint.gradient, in: Circle())
+
+                    VStack(alignment: .leading, spacing: 5) {
                         Text(step.title)
                             .font(.title3.weight(.semibold))
 
                         Text(step.detail)
                             .foregroundStyle(.secondary)
-
-                        Divider()
-
-                        Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
-                            GridRow {
-                                ShortcutLabel(title: "Windows", value: step.windowsEquivalent, isMac: false)
-                                ShortcutLabel(title: "Mac", value: step.macAction, isMac: true)
-                            }
-                        }
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+
+                Divider()
+
+                Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 10) {
+                    GridRow {
+                        HStack(spacing: 5) {
+                            Circle().fill(.secondary).frame(width: 6, height: 6)
+                            Text("Windows")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .gridColumnAlignment(.leading)
+
+                        ShortcutDisplay(text: step.windowsEquivalent, style: .windows, fallbackIcon: "computermouse")
+                    }
+
+                    GridRow {
+                        HStack(spacing: 5) {
+                            Circle().fill(Color.accentColor).frame(width: 6, height: 6)
+                            Text("Mac")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
+
+                        ShortcutDisplay(text: step.macAction, style: .mac, fallbackIcon: macFallbackIcon)
+                    }
+                }
+                .padding(.leading, 35)
             }
         }
     }
 
-    private var completionControl: some View {
-        CardView {
-            HStack(spacing: 14) {
-                Image(systemName: lesson.isCompleted ? "checkmark.seal.fill" : "circle")
-                    .font(.title)
-                    .foregroundStyle(lesson.isCompleted ? .green : .secondary)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(lesson.isCompleted ? "Lesson complete" : "Ready to mark this lesson complete?")
-                        .font(.headline)
-
-                    Text(lesson.isCompleted ? "Nice work. This lesson is now counted in your progress." : "Complete the practice check, then mark the lesson complete.")
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                if lesson.isCompleted {
-                    HStack(spacing: 12) {
-                        Button {
-                            toggleCompletion()
-                        } label: {
-                            Label("Mark Incomplete", systemImage: "arrow.uturn.backward")
-                        }
-                        .buttonStyle(BorderedButtonStyle())
-                        
-                        if let next = nextLesson {
-                            Button {
-                                navigateToNext(next)
-                            } label: {
-                                Label("Next Lesson", systemImage: "arrow.forward.circle.fill")
-                            }
-                            .buttonStyle(BorderedProminentButtonStyle())
-                        }
-                    }
-                } else {
-                    Button {
-                        toggleCompletion()
-                    } label: {
-                        Label("Complete Lesson", systemImage: "checkmark")
-                    }
-                    .buttonStyle(BorderedProminentButtonStyle())
-                    .disabled(!hasAnsweredQuizCorrectly)
-                }
-            }
-        }
-    }
+    // MARK: - Practice (quiz)
 
     private var practiceCheck: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                Image(systemName: "questionmark.circle")
-                    .foregroundStyle(.blue)
-
-                Text("Practice check")
-                    .font(.headline)
-            }
-
+        PracticeSection(
+            title: "Practice check",
+            systemImage: hasPassedPracticeCheck ? "checkmark.circle.fill" : "questionmark.circle",
+            tint: .green,
+            isComplete: hasPassedPracticeCheck
+        ) {
             Text(quizQuestion)
                 .font(.title3.weight(.semibold))
 
@@ -238,121 +230,132 @@ struct LessonDetailView: View {
                         isCorrect: answer == correctQuizAnswer,
                         hasSelection: selectedQuizAnswer != nil
                     ) {
-                        selectedQuizAnswer = answer
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            selectedQuizAnswer = answer
+                        }
                     }
                 }
             }
 
             if let selectedQuizAnswer {
                 Label(
-                    selectedQuizAnswer == correctQuizAnswer ? "Correct. You can complete this lesson." : "Try again. Look back at the Mac action above.",
+                    selectedQuizAnswer == correctQuizAnswer
+                        ? "Correct! You can complete this lesson."
+                        : "Not quite — look back at the Mac action above.",
                     systemImage: selectedQuizAnswer == correctQuizAnswer ? "checkmark.circle.fill" : "xmark.circle.fill"
                 )
                 .font(.callout.weight(.medium))
                 .foregroundStyle(selectedQuizAnswer == correctQuizAnswer ? .green : .red)
             }
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.green.opacity(0.05), Color.green.opacity(0.01)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.green.opacity(0.2), lineWidth: 1.5)
-        )
-        .shadow(color: Color.green.opacity(0.03), radius: 8, y: 3)
     }
 
-    private var keyboardPractice: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                Image(systemName: hasCompletedKeyboardPractice ? "checkmark.circle.fill" : "keyboard")
-                    .foregroundStyle(hasCompletedKeyboardPractice ? .green : .blue)
+    // MARK: - Practice (keyboard)
 
-                Text("Keyboard practice")
-                    .font(.headline)
+    private var keyboardPractice: some View {
+        PracticeSection(
+            title: "Keyboard practice",
+            systemImage: hasCompletedKeyboardPractice ? "checkmark.circle.fill" : "keyboard",
+            tint: .blue,
+            isComplete: hasCompletedKeyboardPractice
+        ) {
+            HStack(spacing: 12) {
+                Text("Press")
+                    .font(.title3.weight(.semibold))
+
+                ShortcutDisplay(text: correctQuizAnswer, style: .mac, large: true)
+
+                Text("for real")
+                    .font(.title3.weight(.semibold))
             }
 
-            Text("Press the Mac shortcut")
-                .font(.title3.weight(.semibold))
+            ShortcutCaptureWell(
+                expected: expectedShortcut,
+                captured: $capturedShortcut,
+                isSuccessful: $hasCompletedKeyboardPractice
+            )
 
-            HStack(spacing: 12) {
-                ShortcutKeyCaps(displayText: correctQuizAnswer)
+            if !hasCompletedKeyboardPractice {
+                HStack {
+                    Text("Some system-wide shortcuts are handled by macOS before MacPilot can see them.")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+
+                    Spacer()
+
+                    Button {
+                        withAnimation(.spring(duration: 0.35)) {
+                            hasCompletedKeyboardPractice = true
+                        }
+                    } label: {
+                        Label("I Practiced It", systemImage: "hand.thumbsup")
+                    }
+                    .buttonStyle(.bordered)
+                    .help("Mark the practice as done if macOS intercepted the shortcut.")
+                }
+            }
+        }
+    }
+
+    // MARK: - Completion
+
+    private var completionControl: some View {
+        CardView(padding: 20) {
+            HStack(spacing: 14) {
+                Image(systemName: lesson.isCompleted ? "checkmark.seal.fill" : "seal")
+                    .font(.system(size: 30))
+                    .foregroundStyle(lesson.isCompleted ? .green : .secondary)
+                    .contentTransition(.symbolEffect(.replace))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(lesson.isCompleted ? "Lesson complete" : "Finish this lesson")
+                        .font(.headline)
+
+                    Text(lesson.isCompleted
+                        ? "Nice work — it now counts toward your progress and spaced reviews."
+                        : hasPassedPracticeCheck
+                            ? "You passed the practice check. Mark it complete to keep your streak."
+                            : "Pass the practice check above to unlock completion.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
 
                 Spacer()
 
-                if let capturedShortcut {
-                    Text("You pressed \(capturedShortcut.displayText)")
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(hasCompletedKeyboardPractice ? .green : .red)
+                if lesson.isCompleted {
+                    HStack(spacing: 10) {
+                        Button {
+                            toggleCompletion()
+                        } label: {
+                            Label("Mark Incomplete", systemImage: "arrow.uturn.backward")
+                        }
+                        .buttonStyle(.bordered)
+
+                        if let next = nextLesson {
+                            Button {
+                                navigateToNext(next)
+                            } label: {
+                                Label("Next Lesson", systemImage: "arrow.forward")
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                    }
                 } else {
-                    Text("Waiting for input")
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(.secondary)
+                    Button {
+                        toggleCompletion()
+                    } label: {
+                        Label("Complete Lesson", systemImage: "checkmark")
+                            .padding(.horizontal, 4)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(!hasPassedPracticeCheck)
                 }
             }
-
-            KeyboardShortcutCaptureView { shortcut in
-                capturedShortcut = shortcut
-                hasCompletedKeyboardPractice = shortcut == expectedShortcut
-            }
-            .frame(height: 78)
-
-            Label(
-                keyboardPracticeMessage,
-                systemImage: hasCompletedKeyboardPractice ? "checkmark.circle.fill" : "info.circle"
-            )
-            .font(.callout.weight(.medium))
-            .foregroundStyle(hasCompletedKeyboardPractice ? .green : .secondary)
-
-            if !hasCompletedKeyboardPractice {
-                Button {
-                    hasCompletedKeyboardPractice = true
-                } label: {
-                    Label("I Practiced This Shortcut", systemImage: "hand.tap")
-                }
-                .buttonStyle(BorderedButtonStyle())
-                .help("Some macOS system shortcuts are handled before MacPilot can detect them.")
-            }
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.blue.opacity(0.06), Color.blue.opacity(0.02)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.blue.opacity(0.24), lineWidth: 1.5)
-        )
-        .shadow(color: Color.blue.opacity(0.04), radius: 8, y: 3)
     }
 
-    private var keyboardPracticeMessage: String {
-        if hasCompletedKeyboardPractice {
-            return "Correct. You can complete this lesson."
-        }
-
-        if capturedShortcut != nil {
-            return "Try again, or use the practice confirmation if macOS handled the shortcut."
-        }
-
-        return "Click the practice box, then press \(correctQuizAnswer)."
-    }
+    // MARK: - Actions
 
     private func toggleCompletion() {
         guard let progress = progressRecords.first else { return }
@@ -361,7 +364,7 @@ struct LessonDetailView: View {
             lesson.isCompleted = false
             lesson.completedAt = nil
             progress.removeLessonCompletion()
-            
+
             let lessonId = lesson.id
             if let reviewItems = try? modelContext.fetch(FetchDescriptor<ReviewItem>()),
                let item = reviewItems.first(where: { $0.lessonId == lessonId }) {
@@ -372,14 +375,14 @@ struct LessonDetailView: View {
             lesson.completedAt = .now
             progress.recordLessonCompletion()
             showsCompletionCelebration = true
-            
+
             let lessonId = lesson.id
             if let reviewItems = try? modelContext.fetch(FetchDescriptor<ReviewItem>()),
                !reviewItems.contains(where: { $0.lessonId == lessonId }) {
                 let reviewItem = ReviewItem(lessonId: lessonId)
                 modelContext.insert(reviewItem)
             }
-            
+
             AchievementService.checkAndUnlockAchievements(modelContext: modelContext, lessons: lessons, progress: progress)
         }
     }
@@ -400,19 +403,172 @@ struct LessonDetailView: View {
     }
 
     private func navigateToNext(_ next: Lesson) {
+        resetPracticeState()
+        withAnimation(.easeInOut(duration: 0.3)) {
+            lesson = next
+        }
+    }
+
+    private func resetPracticeState() {
         capturedShortcut = nil
         hasCompletedKeyboardPractice = false
         selectedQuizAnswer = nil
         showsCompletionCelebration = false
         showsCompletionToast = false
-        
-        withAnimation(.easeInOut(duration: 0.3)) {
-            lesson = next
-        }
     }
 }
 
-private struct CapturedShortcut: Equatable {
+// MARK: - Practice section chrome
+
+private struct PracticeSection<Content: View>: View {
+    let title: String
+    let systemImage: String
+    let tint: Color
+    let isComplete: Bool
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .foregroundStyle(isComplete ? .green : tint)
+                    .contentTransition(.symbolEffect(.replace))
+
+                Text(title)
+                    .font(.headline)
+
+                Spacer()
+
+                if isComplete {
+                    MetaChip(text: "Passed", systemImage: "checkmark", tint: .green)
+                }
+            }
+
+            content
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: AppTheme.cardCornerRadius, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            (isComplete ? Color.green : tint).opacity(0.07),
+                            (isComplete ? Color.green : tint).opacity(0.02)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.cardCornerRadius, style: .continuous)
+                .strokeBorder((isComplete ? Color.green : tint).opacity(0.25), lineWidth: 1.5)
+        )
+        .animation(.easeOut(duration: 0.25), value: isComplete)
+    }
+}
+
+// MARK: - Capture well
+
+/// The interactive area that listens for the real keyboard shortcut.
+/// Click to focus; it shows its state (idle / listening / wrong / success) inline.
+private struct ShortcutCaptureWell: View {
+    let expected: CapturedShortcut?
+    @Binding var captured: CapturedShortcut?
+    @Binding var isSuccessful: Bool
+
+    @State private var isFocused = false
+
+    var body: some View {
+        ZStack {
+            KeyboardShortcutCaptureView(
+                onShortcut: { shortcut in
+                    captured = shortcut
+                    if shortcut == expected {
+                        withAnimation(.spring(duration: 0.35)) {
+                            isSuccessful = true
+                        }
+                    }
+                },
+                onFocusChange: { focused in
+                    withAnimation(.easeOut(duration: 0.18)) {
+                        isFocused = focused
+                    }
+                }
+            )
+
+            statusContent
+                .allowsHitTesting(false)
+        }
+        .frame(height: 86)
+        .background(wellBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(
+                    borderColor,
+                    style: StrokeStyle(lineWidth: isFocused || isSuccessful ? 2 : 1.5, dash: isSuccessful || isFocused ? [] : [6, 4])
+                )
+        }
+    }
+
+    @ViewBuilder
+    private var statusContent: some View {
+        if isSuccessful {
+            Label("Nailed it! That's the Mac way.", systemImage: "checkmark.circle.fill")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.green)
+        } else if let captured {
+            VStack(spacing: 6) {
+                HStack(spacing: 7) {
+                    Text("You pressed")
+                        .foregroundStyle(.secondary)
+                    Text(captured.displayText)
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .foregroundStyle(.red)
+                }
+                Text("Try again — check the keys above.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        } else if isFocused {
+            VStack(spacing: 6) {
+                Image(systemName: "ear")
+                    .font(.title2)
+                    .foregroundStyle(Color.accentColor)
+                Text("Listening — press the shortcut now")
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(Color.accentColor)
+            }
+        } else {
+            VStack(spacing: 6) {
+                Image(systemName: "cursorarrow.click")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                Text("Click here, then press the shortcut")
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var wellBackground: Color {
+        if isSuccessful { return .green.opacity(0.08) }
+        if captured != nil && !isSuccessful { return .red.opacity(0.05) }
+        return Color(nsColor: .controlBackgroundColor)
+    }
+
+    private var borderColor: Color {
+        if isSuccessful { return .green.opacity(0.6) }
+        if captured != nil { return .red.opacity(0.45) }
+        if isFocused { return .accentColor.opacity(0.7) }
+        return .secondary.opacity(0.35)
+    }
+}
+
+// MARK: - Shortcut capture plumbing
+
+struct CapturedShortcut: Equatable {
     let key: String
     let modifiers: Set<ShortcutModifier>
 
@@ -452,6 +608,11 @@ private struct CapturedShortcut: Equatable {
             return nil
         }
 
+        // Reject "keys" that are really descriptions ("scroll wheel up").
+        guard keyPart.count == 1 || keyPart.normalizedShortcutKey != keyPart.lowercased() || ["space", "tab"].contains(keyPart.lowercased()) else {
+            return nil
+        }
+
         self.init(key: keyPart.normalizedShortcutKey, modifiers: modifiers)
     }
 
@@ -465,7 +626,7 @@ private struct CapturedShortcut: Equatable {
     }
 }
 
-private enum ShortcutModifier: Hashable {
+enum ShortcutModifier: Hashable {
     case command
     case shift
     case option
@@ -485,24 +646,24 @@ private enum ShortcutModifier: Hashable {
 
 private struct KeyboardShortcutCaptureView: NSViewRepresentable {
     let onShortcut: (CapturedShortcut) -> Void
+    let onFocusChange: (Bool) -> Void
 
     func makeNSView(context: Context) -> ShortcutCaptureNSView {
         let view = ShortcutCaptureNSView()
         view.onShortcut = onShortcut
+        view.onFocusChange = onFocusChange
         return view
     }
 
     func updateNSView(_ nsView: ShortcutCaptureNSView, context: Context) {
         nsView.onShortcut = onShortcut
-
-        DispatchQueue.main.async {
-            nsView.window?.makeFirstResponder(nsView)
-        }
+        nsView.onFocusChange = onFocusChange
     }
 }
 
 private final class ShortcutCaptureNSView: NSView {
     var onShortcut: ((CapturedShortcut) -> Void)?
+    var onFocusChange: ((Bool) -> Void)?
 
     override var acceptsFirstResponder: Bool {
         true
@@ -510,7 +671,23 @@ private final class ShortcutCaptureNSView: NSView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        // Grab focus once when the practice area appears so the user can
+        // try the shortcut immediately; afterwards focus moves naturally.
         window?.makeFirstResponder(self)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
+    }
+
+    override func becomeFirstResponder() -> Bool {
+        onFocusChange?(true)
+        return super.becomeFirstResponder()
+    }
+
+    override func resignFirstResponder() -> Bool {
+        onFocusChange?(false)
+        return super.resignFirstResponder()
     }
 
     override func keyDown(with event: NSEvent) {
@@ -518,6 +695,11 @@ private final class ShortcutCaptureNSView: NSView {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        // Swallow key equivalents while practicing so trying ⌘W or ⌘Q
+        // exercises the muscle memory instead of closing the app.
+        guard window?.firstResponder === self else {
+            return false
+        }
         handle(event)
         return true
     }
@@ -528,11 +710,6 @@ private final class ShortcutCaptureNSView: NSView {
         }
 
         onShortcut?(shortcut)
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        NSColor.controlBackgroundColor.setFill()
-        NSBezierPath(roundedRect: bounds, xRadius: 8, yRadius: 8).fill()
     }
 }
 
@@ -558,28 +735,7 @@ private extension CapturedShortcut {
     }
 }
 
-private struct ShortcutKeyCaps: View {
-    let displayText: String
-
-    private var parts: [String] {
-        displayText
-            .components(separatedBy: "+")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-    }
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(parts, id: \.self) { part in
-                Text(part.shortcutSymbolText)
-                    .font(.system(.title3, design: .rounded).weight(.semibold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            }
-        }
-    }
-}
+// MARK: - Quiz answer
 
 private struct QuizAnswerButton: View {
     let answer: String
@@ -588,39 +744,71 @@ private struct QuizAnswerButton: View {
     let hasSelection: Bool
     let action: () -> Void
 
+    @State private var isHovered = false
+
     private var borderColor: Color {
         if isSelected && isCorrect { return .green }
         if isSelected && !isCorrect { return .red }
+        if isHovered { return .secondary.opacity(0.5) }
         return .secondary.opacity(0.25)
     }
 
     var body: some View {
         Button(action: action) {
-            HStack {
+            HStack(spacing: 10) {
+                Image(systemName: radioSymbol)
+                    .foregroundStyle(radioColor)
+
                 Text(answer)
                     .font(.body.weight(.medium))
 
                 Spacer()
 
-                if isSelected {
-                    Image(systemName: isCorrect ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundStyle(isCorrect ? .green : .red)
-                } else if hasSelection && isCorrect {
-                    Image(systemName: "checkmark.circle")
+                if hasSelection && isCorrect && !isSelected {
+                    Text("Correct answer")
+                        .font(.caption)
                         .foregroundStyle(.green)
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(Color.secondary.opacity(isSelected ? 0.16 : 0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .padding(.vertical, 11)
+            .background(
+                Color.secondary.opacity(isSelected ? 0.14 : isHovered ? 0.1 : 0.06),
+                in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+            )
             .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(borderColor)
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(borderColor, lineWidth: isSelected ? 1.5 : 1)
             }
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+
+    private var radioSymbol: String {
+        if isSelected {
+            return isCorrect ? "checkmark.circle.fill" : "xmark.circle.fill"
+        }
+        if hasSelection && isCorrect {
+            return "checkmark.circle"
+        }
+        return "circle"
+    }
+
+    private var radioColor: Color {
+        if isSelected {
+            return isCorrect ? .green : .red
+        }
+        if hasSelection && isCorrect {
+            return .green
+        }
+        return .secondary
     }
 }
+
+// MARK: - Helpers
 
 private extension Array where Element: Hashable {
     func uniqued() -> [Element] {
@@ -629,7 +817,7 @@ private extension Array where Element: Hashable {
     }
 }
 
-private extension String {
+extension String {
     var normalizedShortcutKey: String {
         switch lowercased() {
         case "space", " ":
@@ -651,53 +839,6 @@ private extension String {
             return "Tab"
         default:
             return uppercased()
-        }
-    }
-
-    var shortcutSymbolText: String {
-        switch lowercased() {
-        case "command", "cmd":
-            return "⌘"
-        case "shift":
-            return "⇧"
-        case "option", "alt":
-            return "⌥"
-        case "control", "ctrl":
-            return "⌃"
-        case "space":
-            return "Space"
-        default:
-            return self
-        }
-    }
-}
-
-private struct ShortcutLabel: View {
-    let title: String
-    let value: String
-    let isMac: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(isMac ? Color.accentColor : Color.secondary)
-
-            Text(value)
-                .font(.system(.body, design: .monospaced).weight(isMac ? .bold : .semibold))
-                .foregroundStyle(isMac ? Color.primary : Color.secondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .background(
-                    isMac 
-                        ? Color.blue.opacity(0.12)
-                        : Color.gray.opacity(0.08),
-                    in: RoundedRectangle(cornerRadius: 6, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .strokeBorder(isMac ? Color.blue.opacity(0.24) : Color.gray.opacity(0.15), lineWidth: 1)
-                )
         }
     }
 }

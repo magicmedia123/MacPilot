@@ -660,6 +660,37 @@ enum MockLessonData {
             ]
         ),
 
+        Lesson(
+            id: "navigation-force-quit",
+            title: "Force Quit a Frozen App",
+            summary: "The Mac answer to Ctrl + Alt + Delete when an app stops responding.",
+            category: .navigation,
+            difficulty: .comfortable,
+            estimatedMinutes: 4,
+            symbolName: "exclamationmark.octagon",
+            sortOrder: 20,
+            quizQuestion: "What is the Mac equivalent of Ctrl + Alt + Delete for force quitting?",
+            correctQuizAnswer: "Command + Option + Escape",
+            incorrectQuizAnswerOne: "Control + Alt + Delete",
+            incorrectQuizAnswerTwo: "Command + Q",
+            steps: [
+                LessonStep(
+                    title: "Open the Force Quit window",
+                    detail: "When an app freezes, this opens a list of running apps so you can force the stuck one to quit.",
+                    windowsEquivalent: "Ctrl + Alt + Delete",
+                    macAction: "Command + Option + Escape",
+                    sortOrder: 0
+                ),
+                LessonStep(
+                    title: "Force quit from the Dock",
+                    detail: "Hold Option while right-clicking a Dock icon and 'Quit' becomes 'Force Quit.'",
+                    windowsEquivalent: "Task Manager → End task",
+                    macAction: "Option + right-click Dock icon → Force Quit",
+                    sortOrder: 1
+                )
+            ]
+        ),
+
         // ──────────────────────────────────────────────
         // MARK: - Productivity
         // ──────────────────────────────────────────────
@@ -672,7 +703,7 @@ enum MockLessonData {
             difficulty: .beginner,
             estimatedMinutes: 4,
             symbolName: "magnifyingglass",
-            sortOrder: 20,
+            sortOrder: 21,
             quizQuestion: "What shortcut opens Spotlight Search?",
             correctQuizAnswer: "Command + Space",
             incorrectQuizAnswerOne: "Command + Return",
@@ -702,7 +733,7 @@ enum MockLessonData {
             difficulty: .comfortable,
             estimatedMinutes: 5,
             symbolName: "camera.viewfinder",
-            sortOrder: 21,
+            sortOrder: 22,
             quizQuestion: "What shortcut opens the Mac screenshot toolbar?",
             correctQuizAnswer: "Command + Shift + 5",
             incorrectQuizAnswerOne: "Command + Shift + 3",
@@ -739,7 +770,7 @@ enum MockLessonData {
             difficulty: .comfortable,
             estimatedMinutes: 5,
             symbolName: "rectangle.split.2x1",
-            sortOrder: 22,
+            sortOrder: 23,
             quizQuestion: "How do you enter Split View on Mac?",
             correctQuizAnswer: "Hover over the green window button and choose a tile option",
             incorrectQuizAnswerOne: "Press Command + Left Arrow",
@@ -776,7 +807,7 @@ enum MockLessonData {
             difficulty: .advanced,
             estimatedMinutes: 6,
             symbolName: "text.cursor",
-            sortOrder: 23,
+            sortOrder: 24,
             quizQuestion: "What shortcut moves the cursor to the beginning of a line on Mac?",
             correctQuizAnswer: "Command + Left Arrow",
             incorrectQuizAnswerOne: "Home key",
@@ -820,7 +851,7 @@ enum MockLessonData {
             difficulty: .advanced,
             estimatedMinutes: 5,
             symbolName: "face.smiling",
-            sortOrder: 24,
+            sortOrder: 25,
             quizQuestion: "What shortcut opens the Emoji and Symbols picker on Mac?",
             correctQuizAnswer: "Command + Control + Space",
             incorrectQuizAnswerOne: "Command + E",
@@ -846,6 +877,36 @@ enum MockLessonData {
                     windowsEquivalent: "Win + H",
                     macAction: "Press Fn (Globe) key twice or enable in System Settings → Keyboard",
                     sortOrder: 2
+                )
+            ]
+        ),
+        Lesson(
+            id: "productivity-lock-screen",
+            title: "Lock Your Screen",
+            summary: "Step away securely — the Mac version of Win + L.",
+            category: .productivity,
+            difficulty: .beginner,
+            estimatedMinutes: 3,
+            symbolName: "lock.display",
+            sortOrder: 26,
+            quizQuestion: "What shortcut locks your Mac screen?",
+            correctQuizAnswer: "Control + Command + Q",
+            incorrectQuizAnswerOne: "Command + L",
+            incorrectQuizAnswerTwo: "Command + Option + Q",
+            steps: [
+                LessonStep(
+                    title: "Lock the screen instantly",
+                    detail: "Locks your Mac and shows the login screen — your apps keep running in the background. Careful: pressing it now really locks your screen!",
+                    windowsEquivalent: "Win + L",
+                    macAction: "Control + Command + Q",
+                    sortOrder: 0
+                ),
+                LessonStep(
+                    title: "Lock from the Apple menu",
+                    detail: "The Apple menu in the top-left corner always has Lock Screen available if you forget the shortcut.",
+                    windowsEquivalent: "Start → user icon → Lock",
+                    macAction: "Apple menu → Lock Screen",
+                    sortOrder: 1
                 )
             ]
         )

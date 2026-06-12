@@ -26,6 +26,8 @@
 		8A0000242C0A000100000001 /* ReviewCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001242C0A000100000001 /* ReviewCard.swift */; };
 		8A0000212C0A000100000001 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001212C0A000100000001 /* ConfettiView.swift */; };
 		8A0000222C0A000100000001 /* ProgressRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001222C0A000100000001 /* ProgressRing.swift */; };
+		8A0000282C0A000100000001 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001282C0A000100000001 /* DesignSystem.swift */; };
+		8A0000292C0A000100000001 /* CheatSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001292C0A000100000001 /* CheatSheetView.swift */; };
 		8A00000D2C0A000100000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8A00010D2C0A000100000001 /* Assets.xcassets */; };
 		8A00000E2C0A000100000001 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A00010F2C0A000100000001 /* DashboardViewModel.swift */; };
 		8A00000F2C0A000100000001 /* LessonsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0001102C0A000100000001 /* LessonsViewModel.swift */; };
@@ -55,6 +57,8 @@
 		8A0001242C0A000100000001 /* ReviewCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCard.swift; sourceTree = "<group>"; };
 		8A0001212C0A000100000001 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
 		8A0001222C0A000100000001 /* ProgressRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressRing.swift; sourceTree = "<group>"; };
+		8A0001282C0A000100000001 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		8A0001292C0A000100000001 /* CheatSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatSheetView.swift; sourceTree = "<group>"; };
 		8A00010D2C0A000100000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8A00010E2C0A000100000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8A00010F2C0A000100000001 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
@@ -133,12 +137,21 @@
 				8A0000532C0A000100000001 /* Home */,
 				8A00005A2C0A000100000001 /* Achievements */,
 				8A0000542C0A000100000001 /* Lessons */,
+				8A00005B2C0A000100000001 /* CheatSheet */,
 				8A0000552C0A000100000001 /* Progress */,
 				8A0000592C0A000100000001 /* Settings */,
 				8A0000562C0A000100000001 /* Onboarding */,
 				8A0000572C0A000100000001 /* Shared */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		8A00005B2C0A000100000001 /* CheatSheet */ = {
+			isa = PBXGroup;
+			children = (
+				8A0001292C0A000100000001 /* CheatSheetView.swift */,
+			);
+			path = CheatSheet;
 			sourceTree = "<group>";
 		};
 		8A0000532C0A000100000001 /* Home */ = {
@@ -189,6 +202,7 @@
 				8A00010C2C0A000100000001 /* CardView.swift */,
 				8A0001212C0A000100000001 /* ConfettiView.swift */,
 				8A0001222C0A000100000001 /* ProgressRing.swift */,
+				8A0001282C0A000100000001 /* DesignSystem.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -300,6 +314,8 @@
 				8A0000242C0A000100000001 /* ReviewCard.swift in Sources */,
 				8A0000212C0A000100000001 /* ConfettiView.swift in Sources */,
 				8A0000222C0A000100000001 /* ProgressRing.swift in Sources */,
+				8A0000282C0A000100000001 /* DesignSystem.swift in Sources */,
+				8A0000292C0A000100000001 /* CheatSheetView.swift in Sources */,
 				8A00000E2C0A000100000001 /* DashboardViewModel.swift in Sources */,
 				8A00000F2C0A000100000001 /* LessonsViewModel.swift in Sources */,
 				8A0000112C0A000100000001 /* ProgressViewModel.swift in Sources */,

@@ -2,9 +2,12 @@ import SwiftData
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Lesson.sortOrder) private var lessons: [Lesson]
     @Query private var progressRecords: [UserProgress]
     @State private var showsResetConfirmation = false
+
+    @AppStorage("appearanceMode") private var appearanceMode = AppearanceMode.system
 
     private var viewModel: SettingsViewModel {
         SettingsViewModel(lessons: lessons, progress: progressRecords.first)
@@ -12,40 +15,67 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 20) {
                 header
+                appearance
                 learningData
                 about
             }
             .padding(28)
             .frame(maxWidth: 820, alignment: .leading)
+            .frame(maxWidth: .infinity)
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .navigationTitle("Settings")
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Settings")
-                .font(.largeTitle.weight(.semibold))
+                .font(.system(size: 30, weight: .bold))
 
-            Text("Manage your local MacPilot learning data.")
+            Text("Appearance and local learning data.")
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
     }
 
+    private var appearance: some View {
+        CardView(padding: 20) {
+            VStack(alignment: .leading, spacing: 14) {
+                Label("Appearance", systemImage: "paintbrush")
+                    .font(.headline)
+
+                Picker("Appearance", selection: $appearanceMode) {
+                    ForEach(AppearanceMode.allCases) { mode in
+                        Label(mode.rawValue, systemImage: mode.symbolName)
+                            .tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+
+                Text("System follows your Mac's appearance setting.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
     private var learningData: some View {
-        CardView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Learning data")
+        CardView(padding: 20) {
+            VStack(alignment: .leading, spacing: 15) {
+                Label("Learning data", systemImage: "internaldrive")
                     .font(.headline)
 
                 HStack {
                     Label("\(viewModel.completedCount) completed lessons", systemImage: "checkmark.circle")
+
                     Spacer()
+
                     Label("Stored locally", systemImage: "lock")
                         .foregroundStyle(.secondary)
+                        .help("All progress stays on this Mac. Nothing is uploaded.")
                 }
 
                 if let profileSummary = viewModel.profileSummary {
@@ -61,24 +91,24 @@ struct SettingsView: View {
                     } label: {
                         Label("Show Onboarding Again", systemImage: "sparkles")
                     }
-                    .buttonStyle(BorderedButtonStyle())
+                    .buttonStyle(.bordered)
 
                     Button(role: .destructive) {
                         showsResetConfirmation = true
                     } label: {
                         Label("Reset Progress", systemImage: "arrow.counterclockwise")
                     }
-                    .buttonStyle(BorderedButtonStyle())
+                    .buttonStyle(.bordered)
                     .confirmationDialog(
                         "Reset all progress?",
                         isPresented: $showsResetConfirmation,
                         titleVisibility: .visible
                     ) {
-                        Button("Reset", role: .destructive) {
-                            viewModel.resetLessonProgress()
+                        Button("Reset Everything", role: .destructive) {
+                            viewModel.resetLessonProgress(in: modelContext)
                         }
                     } message: {
-                        Text("This will erase all lesson completions and streaks. This action cannot be undone.")
+                        Text("This erases all lesson completions, streaks, scheduled reviews, and achievements. It cannot be undone.")
                     }
                 }
             }
@@ -86,17 +116,34 @@ struct SettingsView: View {
     }
 
     private var about: some View {
-        CardView {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("About MacPilot")
-                    .font(.headline)
+        CardView(padding: 20) {
+            HStack(spacing: 16) {
+                Image(systemName: "command")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 52, height: 52)
+                    .background(AppTheme.accentGradient, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .shadow(color: .blue.opacity(0.3), radius: 4, y: 2)
 
-                Text("MacPilot helps Windows users build Mac muscle memory through short, focused lessons.")
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("MacPilot")
+                        .font(.headline)
 
-                Text("Version 1.0.0")
-                    .foregroundStyle(.secondary)
+                    Text("Short, focused lessons that turn Windows muscle memory into Mac fluency.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+
+                    Text("Version \(appVersion)")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+
+                Spacer()
             }
         }
+    }
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
     }
 }

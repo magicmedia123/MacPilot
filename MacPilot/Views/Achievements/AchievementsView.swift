@@ -2,8 +2,9 @@ import SwiftData
 import SwiftUI
 
 struct AchievementsView: View {
-    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Achievement.id) private var achievements: [Achievement]
+    @Query(sort: \Lesson.sortOrder) private var lessons: [Lesson]
+    @Query private var progressRecords: [UserProgress]
 
     private var unlockedCount: Int {
         achievements.filter(\.isUnlocked).count
@@ -15,96 +16,119 @@ struct AchievementsView: View {
     }
 
     private let columns = [
-        GridItem(.adaptive(minimum: 220), spacing: 20)
+        GridItem(.adaptive(minimum: 220), spacing: 16)
     ]
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 20) {
                 header
-                
+
                 summaryCard
-                
-                Text("Your Badges")
-                    .font(.title2.weight(.semibold))
-                    .padding(.top, 8)
-                
-                LazyVGrid(columns: columns, spacing: 20) {
+
+                LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(achievements) { achievement in
-                        AchievementCard(achievement: achievement)
+                        AchievementCard(
+                            achievement: achievement,
+                            progressHint: progressHint(for: achievement)
+                        )
                     }
                 }
             }
             .padding(28)
-            .frame(maxWidth: 820, alignment: .leading)
+            .frame(maxWidth: 880, alignment: .leading)
+            .frame(maxWidth: .infinity)
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .navigationTitle("Achievements")
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Achievements")
-                .font(.largeTitle.weight(.semibold))
+                .font(.system(size: 30, weight: .bold))
 
-            Text("Track your milestones as you build Mac muscle memory.")
+            Text("Milestones on your way to Mac mastery.")
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
     }
 
     private var summaryCard: some View {
-        CardView {
-            HStack(spacing: 24) {
+        CardView(padding: 22, hoverLift: false) {
+            HStack(spacing: 22) {
                 ProgressRing(
                     progress: progressPercentage,
-                    lineWidth: 12,
-                    size: 80,
-                    tint: Color.accentColor
+                    lineWidth: 10,
+                    size: 76,
+                    tint: .orange
                 )
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Milestone Progress")
-                        .font(.headline)
-                    
+
+                VStack(alignment: .leading, spacing: 6) {
                     Text("\(unlockedCount) of \(achievements.count) badges unlocked")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    
+                        .font(.headline)
+
                     Text(motivationalText)
-                        .font(.caption)
+                        .font(.callout)
                         .foregroundStyle(.secondary)
-                        .italic()
                 }
-                
+
                 Spacer()
             }
-            .padding(.vertical, 8)
         }
     }
-    
+
     private var motivationalText: String {
         let percent = progressPercentage
         if percent == 0 {
-            return "Complete lessons to unlock your first badge!"
+            return "Complete lessons to unlock your first badge."
         } else if percent < 0.5 {
-            return "Off to a solid start! Keep practicing daily."
+            return "Off to a solid start — keep practicing daily."
         } else if percent < 1.0 {
-            return "Over halfway there! You're becoming a power user."
+            return "Over halfway there. You're becoming a power user."
         } else {
-            return "Absolutely incredible! You are a certified Mac Pilot Master! 🏆"
+            return "Incredible — you're a certified Mac Pilot Master! 🏆"
+        }
+    }
+
+    /// A short "how far to go" hint for locked badges.
+    private func progressHint(for achievement: Achievement) -> String? {
+        guard !achievement.isUnlocked else { return nil }
+
+        let completed = lessons.filter(\.isCompleted).count
+        let streak = progressRecords.first?.displayStreak ?? 0
+
+        func lessonsToGo(_ target: Int) -> String {
+            let remaining = max(0, target - completed)
+            return "\(remaining) lesson\(remaining == 1 ? "" : "s") to go"
+        }
+
+        func streakToGo(_ target: Int) -> String {
+            let remaining = max(0, target - streak)
+            return "\(remaining) more day\(remaining == 1 ? "" : "s")"
+        }
+
+        switch achievement.id {
+        case "first-shortcut": return lessonsToGo(1)
+        case "comfort-zone": return lessonsToGo(5)
+        case "halfway": return lessonsToGo(AchievementService.halfwayThreshold(totalLessons: lessons.count))
+        case "master": return lessonsToGo(lessons.count)
+        case "streak-3": return streakToGo(3)
+        case "streak-7": return streakToGo(7)
+        default: return nil
         }
     }
 }
 
 struct AchievementCard: View {
     let achievement: Achievement
+    var progressHint: String?
+
     @State private var isHovered = false
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             ZStack(alignment: .bottomTrailing) {
-                // Outer ring
                 Circle()
                     .stroke(
                         achievement.isUnlocked
@@ -113,8 +137,7 @@ struct AchievementCard: View {
                         lineWidth: 4
                     )
                     .frame(width: 76, height: 76)
-                
-                // Badge circle
+
                 Circle()
                     .fill(
                         achievement.isUnlocked
@@ -133,14 +156,12 @@ struct AchievementCard: View {
                         radius: isHovered ? 8 : 4,
                         y: isHovered ? 4 : 2
                     )
-                
-                // Symbol icon
+
                 Image(systemName: achievement.symbolName)
                     .font(.system(size: 30, weight: .medium))
                     .foregroundStyle(achievement.isUnlocked ? .white : .secondary)
                     .frame(width: 68, height: 68)
-                
-                // Lock overlay if locked
+
                 if !achievement.isUnlocked {
                     Circle()
                         .fill(.regularMaterial)
@@ -151,60 +172,55 @@ struct AchievementCard: View {
                                 .foregroundStyle(.secondary)
                         }
                         .shadow(color: .black.opacity(0.1), radius: 2)
-                        .transition(.scale)
                 }
             }
             .scaleEffect(isHovered && achievement.isUnlocked ? 1.08 : 1.0)
             .animation(.spring(duration: 0.3), value: isHovered)
-            
-            VStack(spacing: 6) {
+
+            VStack(spacing: 5) {
                 Text(achievement.title)
                     .font(.headline)
                     .foregroundStyle(achievement.isUnlocked ? .primary : .secondary)
                     .multilineTextAlignment(.center)
-                
+
                 Text(achievement.detail)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
-                    .frame(height: 36, alignment: .top)
-                
+                    .frame(height: 34, alignment: .top)
+
                 if achievement.isUnlocked, let date = achievement.unlockedAt {
-                    Text("Unlocked \(date.formatted(date: .abbreviated, time: .omitted))")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(Color.accentColor)
-                        .padding(.top, 4)
+                    MetaChip(
+                        text: "Unlocked \(date.formatted(date: .abbreviated, time: .omitted))",
+                        systemImage: "checkmark",
+                        tint: gradientColor
+                    )
+                } else if let progressHint {
+                    MetaChip(text: progressHint, systemImage: "hourglass", tint: .secondary)
                 } else {
-                    Text("Locked")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 4)
+                    MetaChip(text: "Locked", systemImage: "lock", tint: .secondary)
                 }
             }
         }
-        .padding(20)
+        .padding(18)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(nsColor: .controlBackgroundColor))
-                .shadow(
-                    color: .black.opacity(isHovered ? 0.08 : 0.04),
-                    radius: isHovered ? 12 : 6,
-                    y: isHovered ? 6 : 3
-                )
+            .background.secondary,
+            in: RoundedRectangle(cornerRadius: AppTheme.cardCornerRadius, style: .continuous)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.gray.opacity(0.1), lineWidth: 1)
-        )
+        .overlay {
+            RoundedRectangle(cornerRadius: AppTheme.cardCornerRadius, style: .continuous)
+                .strokeBorder(.separator.opacity(0.4))
+        }
+        .shadow(color: .black.opacity(isHovered ? 0.07 : 0.03), radius: isHovered ? 9 : 4, y: 2)
         .scaleEffect(isHovered ? 1.02 : 1.0)
         .animation(.spring(duration: 0.3), value: isHovered)
         .onHover { hovering in
             isHovered = hovering
         }
     }
-    
+
     private var gradientColor: Color {
         switch achievement.id {
         case "first-shortcut": return .blue

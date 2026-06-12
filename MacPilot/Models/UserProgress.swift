@@ -38,6 +38,18 @@ final class UserProgress {
         self.learningGoal = learningGoal
     }
 
+    /// The streak as the user should see it: a stored streak only counts while the
+    /// chain is intact (last practice was today or yesterday), otherwise it is 0.
+    var displayStreak: Int {
+        guard let lastPracticeDate else { return 0 }
+
+        let calendar = Calendar.current
+        if calendar.isDateInToday(lastPracticeDate) || calendar.isDateInYesterday(lastPracticeDate) {
+            return currentStreak
+        }
+        return 0
+    }
+
     func completeOnboarding(
         macExperienceLevel: String,
         windowsAppsUsed: [String],

@@ -13,124 +13,115 @@ struct DashboardViewModel {
         return Double(completedLessons) / Double(lessons.count)
     }
 
-    var dailyGoalText: String {
-        completedToday ? "Daily goal complete" : "Complete 1 lesson today"
-    }
-
-    var todayPlanTitle: String {
-        completedToday ? "Keep the streak warm" : "Today's plan"
-    }
-
-    var todayPlanStatus: String {
-        completedToday ? "You already completed today's goal." : "Finish one short lesson to keep momentum."
-    }
-
     var completedToday: Bool {
         guard let lastPracticeDate = progress?.lastPracticeDate else { return false }
         return Calendar.current.isDateInToday(lastPracticeDate)
     }
 
+    var allLessonsCompleted: Bool {
+        !lessons.isEmpty && lessons.allSatisfy(\.isCompleted)
+    }
+
     var nextLesson: Lesson? {
-        // If there's an incomplete lesson matching their learning goal, recommend that first.
-        if progress?.learningGoal == "Screenshots",
-           let screenshotLesson = lessons.first(where: { $0.id == "shortcut-screenshots" && !$0.isCompleted }) {
-            return screenshotLesson
+        recommendation?.lesson
+    }
+
+    var recommendationReason: String {
+        recommendation?.reason ?? "New lessons will appear here."
+    }
+
+    /// Picks the next lesson and the reason for picking it in one place,
+    /// so the recommendation and its explanation can never disagree.
+    /// Keep the matched strings in sync with the options offered in OnboardingView.
+    var recommendation: (lesson: Lesson, reason: String)? {
+        let incomplete = lessons
+            .filter { !$0.isCompleted }
+            .sorted { $0.sortOrder < $1.sortOrder }
+
+        guard !incomplete.isEmpty else {
+            // Everything is done; suggest revisiting the first lesson.
+            if let first = lessons.sorted(by: { $0.sortOrder < $1.sortOrder }).first {
+                return (first, "All lessons completed — revisit any lesson or run a review session to stay sharp.")
+            }
+            return nil
         }
 
-        if progress?.learningGoal == "Find files and apps",
-           let spotlightLesson = lessons.first(where: { $0.id == "shortcut-spotlight" && !$0.isCompleted }) {
-            return spotlightLesson
+        func firstIncomplete(withId id: String) -> Lesson? {
+            incomplete.first { $0.id == id }
         }
 
-        if progress?.learningGoal == "Switch apps faster",
-           let switchingLesson = lessons.first(where: { $0.id == "shortcut-app-switching" && !$0.isCompleted }) {
-            return switchingLesson
+        // 1. The goal the user picked during onboarding wins.
+        switch progress?.learningGoal {
+        case "Screenshots":
+            if let lesson = firstIncomplete(withId: "shortcut-screenshots") {
+                return (lesson, "Picked for you because you chose screenshots as your first focus.")
+            }
+        case "Find files and apps":
+            if let lesson = firstIncomplete(withId: "shortcut-spotlight") {
+                return (lesson, "Picked for you because Spotlight replaces Windows search habits.")
+            }
+        case "Switch apps faster":
+            if let lesson = firstIncomplete(withId: "shortcut-app-switching") {
+                return (lesson, "Picked for you because app switching is core Mac navigation.")
+            }
+        default:
+            break
         }
-        
-        // Recommend based on Windows apps background
+
+        // 2. Then their Windows app background.
         let appsUsed = progress?.windowsAppsUsed ?? ""
-        if appsUsed.contains("VS Code") || appsUsed.contains("Sublime") {
-            if let targetLesson = lessons.first(where: { $0.id == "shortcut-text-power" && !$0.isCompleted }) {
-                return targetLesson
-            }
-        }
-        
-        if appsUsed.contains("Excel") || appsUsed.contains("Word") {
-            if let targetLesson = lessons.first(where: { $0.id == "shortcut-select-all" && !$0.isCompleted }) {
-                return targetLesson
+        let appMatches: [(app: String, lessonId: String, reason: String)] = [
+            ("File Explorer", "navigation-finder-basics", "Picked for you because Finder replaces your File Explorer habits."),
+            ("Chrome", "gesture-two-finger-swipe-nav", "Picked for you because swipe navigation replaces browser back and forward buttons."),
+            ("Photoshop", "gesture-pinch-to-zoom", "Picked for you because zoom gestures speed up visual work."),
+            ("Teams", "shortcut-app-switching", "Picked for you because fast app switching helps when juggling chats and calls."),
+            ("Office", "shortcut-save", "Picked for you because save shortcuts are a daily habit in office apps."),
+            ("Outlook", "shortcut-save", "Picked for you because save shortcuts are a daily habit in office apps.")
+        ]
+
+        for match in appMatches where appsUsed.contains(match.app) {
+            if let lesson = firstIncomplete(withId: match.lessonId) {
+                return (lesson, match.reason)
             }
         }
 
-        // Filter incomplete lessons by their experience level
-        let incompleteLessons = lessons.filter { !$0.isCompleted }
+        // 3. Then a lesson matching their comfort level.
         if let experience = progress?.macExperienceLevel {
-            let targetDifficulty: LessonDifficulty
-            if experience.contains("Beginner") {
-                targetDifficulty = .beginner
-            } else if experience.contains("Comfortable") {
-                targetDifficulty = .comfortable
-            } else {
-                targetDifficulty = .advanced
-            }
-            
-            if let match = incompleteLessons.first(where: { $0.difficulty == targetDifficulty }) {
-                return match
+            let targetDifficulty: LessonDifficulty = experience == "Comfortable" ? .comfortable : .beginner
+            if let lesson = incomplete.first(where: { $0.difficulty == targetDifficulty }) {
+                let reasonText = targetDifficulty == .beginner
+                    ? "A friendly next step matched to your experience level."
+                    : "Matched to your comfort level — ready for more than the basics."
+                return (lesson, reasonText)
             }
         }
 
-        return incompleteLessons.first ?? lessons.first
+        // 4. Fall back to course order.
+        if let lesson = incomplete.first {
+            return (lesson, "The next step on your learning path.")
+        }
+
+        return nil
+    }
+
+    var dailyGoalText: String {
+        completedToday ? "Daily goal complete" : "Complete 1 lesson today"
     }
 
     var welcomeSubtitle: String {
         guard let experience = progress?.macExperienceLevel else {
-            return "A calm practice space for turning Windows muscle memory into Mac confidence."
+            return "Turn your Windows muscle memory into Mac confidence."
         }
 
-        return "Personalized for a \(experience.lowercased()) Mac learner moving from Windows."
-    }
-
-    var migrationSummary: String {
-        let apps = progress?.windowsAppsUsed ?? "Windows apps"
-        let goal = progress?.learningGoal ?? "Mac shortcuts"
-        return "Focus: \(goal). Windows background: \(apps)."
-    }
-
-    var recommendationReason: String {
-        guard let next = nextLesson else {
-            return "Recommended as a quick everyday shortcut habit."
+        switch experience {
+        case "Brand new":
+            return "Starting fresh on Mac — we'll begin with the essentials."
+        case "Some basics":
+            return "Building on the Mac basics you already know."
+        case "Comfortable":
+            return "Sharpening your Mac skills beyond the basics."
+        default:
+            return "Turn your Windows muscle memory into Mac confidence."
         }
-        
-        if next.isCompleted {
-            return "All lessons completed! Try reviewing this lesson to practice."
-        }
-        
-        if progress?.learningGoal == "Screenshots" && next.id == "shortcut-screenshots" {
-            return "Recommended because you chose screenshots as your first focus."
-        }
-        if progress?.learningGoal == "Find files and apps" && next.id == "shortcut-spotlight" {
-            return "Recommended because Spotlight helps replace Windows search habits."
-        }
-        if progress?.learningGoal == "Switch apps faster" && next.id == "shortcut-app-switching" {
-            return "Recommended because app switching is core Mac navigation."
-        }
-        
-        let appsUsed = progress?.windowsAppsUsed ?? ""
-        if (appsUsed.contains("VS Code") || appsUsed.contains("Sublime")) && next.id == "shortcut-text-power" {
-            return "Recommended because advanced text selection is vital for developers migrating from Windows."
-        }
-        if (appsUsed.contains("Excel") || appsUsed.contains("Word")) && next.id == "shortcut-select-all" {
-            return "Recommended because this shortcut is a daily standard in office apps."
-        }
-        
-        if let experience = progress?.macExperienceLevel {
-            if experience.contains("Beginner") && next.difficulty == .beginner {
-                return "Recommended for your Beginner experience level to build core confidence."
-            }
-            if experience.contains("Advanced") && next.difficulty == .advanced {
-                return "Recommended because you have advanced computer experience and are ready for power features."
-            }
-        }
-        
-        return "Recommended for your current learning path."
     }
 }

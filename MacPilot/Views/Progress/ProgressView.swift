@@ -16,7 +16,7 @@ struct ProgressDashboardView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 20) {
                 header
                 summaryGrid
                 categoryBreakdown
@@ -24,6 +24,7 @@ struct ProgressDashboardView: View {
             }
             .padding(28)
             .frame(maxWidth: 1040, alignment: .leading)
+            .frame(maxWidth: .infinity)
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .navigationTitle("Progress")
@@ -35,11 +36,11 @@ struct ProgressDashboardView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Progress")
-                .font(.largeTitle.weight(.semibold))
+                .font(.system(size: 30, weight: .bold))
 
-            Text("Track your lessons, streak, and growing Mac fluency.")
+            Text("Track your lessons, streaks, and growing Mac fluency.")
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
@@ -49,22 +50,22 @@ struct ProgressDashboardView: View {
         Grid(horizontalSpacing: 14, verticalSpacing: 14) {
             GridRow {
                 MetricTile(
-                    title: "Completed",
+                    title: "Lessons completed",
                     value: "\(viewModel.completedLessons.count)",
-                    systemImage: "checkmark.circle",
+                    systemImage: "checkmark.circle.fill",
                     tint: .green
                 )
 
                 MetricTile(
                     title: "Current streak",
-                    value: "\(progress?.currentStreak ?? 0)",
-                    systemImage: "flame",
+                    value: "\(progress?.displayStreak ?? 0) day\((progress?.displayStreak ?? 0) == 1 ? "" : "s")",
+                    systemImage: "flame.fill",
                     tint: .orange
                 )
 
                 MetricTile(
                     title: "Best streak",
-                    value: "\(progress?.bestStreak ?? 0)",
+                    value: "\(progress?.bestStreak ?? 0) day\((progress?.bestStreak ?? 0) == 1 ? "" : "s")",
                     systemImage: "rosette",
                     tint: .purple
                 )
@@ -73,21 +74,29 @@ struct ProgressDashboardView: View {
     }
 
     private var categoryBreakdown: some View {
-        CardView {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Text("Learning progress")
-                        .font(.headline)
+        CardView(padding: 22) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(spacing: 16) {
+                    ProgressRing(
+                        progress: viewModel.completionRatio,
+                        lineWidth: 8,
+                        size: 64,
+                        tint: .blue
+                    )
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Overall progress")
+                            .font(.headline)
+
+                        Text("\(viewModel.completedLessons.count) of \(lessons.count) lessons completed")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
 
                     Spacer()
-
-                    Text("\(Int(viewModel.completionRatio * 100))%")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
                 }
 
-                ProgressView(value: animateProgress ? viewModel.completionRatio : 0)
-                    .tint(.blue)
+                Divider()
 
                 ForEach(LessonCategory.allCases) { category in
                     CategoryProgressRow(
@@ -102,24 +111,42 @@ struct ProgressDashboardView: View {
     }
 
     private var recentCompletions: some View {
-        CardView {
-            VStack(alignment: .leading, spacing: 12) {
+        CardView(padding: 22) {
+            VStack(alignment: .leading, spacing: 14) {
                 Text("Recently completed")
                     .font(.headline)
 
                 if viewModel.completedLessons.isEmpty {
-                    Text("Complete your first lesson to start building momentum.")
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 10) {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(.tertiary)
+
+                        Text("Complete your first lesson to start building momentum.")
+                            .foregroundStyle(.secondary)
+                    }
                 } else {
-                    ForEach(viewModel.completedLessons.sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }) { lesson in
-                        HStack {
-                            Label(lesson.title, systemImage: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
+                    let recent = viewModel.completedLessons
+                        .sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
+                        .prefix(8)
+
+                    ForEach(Array(recent)) { lesson in
+                        HStack(spacing: 12) {
+                            IconTile(systemImage: lesson.symbolName, tint: lesson.category.tint, size: 30, cornerRadius: 7)
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(lesson.title)
+                                    .font(.body.weight(.medium))
+
+                                Text(lesson.category.shortName)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
 
                             Spacer()
 
                             if let completedAt = lesson.completedAt {
-                                Text(completedAt, style: .date)
+                                Text(completedAt.formatted(.relative(presentation: .named)))
+                                    .font(.callout)
                                     .foregroundStyle(.secondary)
                             }
                         }
@@ -143,18 +170,21 @@ private struct CategoryProgressRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
-            HStack {
-                Label(category.rawValue, systemImage: category.symbolName)
+            HStack(spacing: 9) {
+                IconTile(systemImage: category.symbolName, tint: category.tint, size: 22, cornerRadius: 6)
+
+                Text(category.rawValue)
+                    .font(.callout.weight(.medium))
 
                 Spacer()
 
                 Text("\(completed)/\(total)")
+                    .font(.callout.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
-            .font(.callout)
 
             ProgressView(value: animate ? ratio : 0)
-                .tint(.blue)
+                .tint(category.tint)
         }
     }
 }
